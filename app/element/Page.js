@@ -188,7 +188,7 @@ Page.prototype.update = function () {
   if (this.loader !== null) {
     if (this.isLoading) {
       this.loader.update(this.getDownloadState(), this.elapsedTime);
-    } else {
+    } else if (this.isComplete) {
       this.loader.remove();
       this.loader = null;
     }

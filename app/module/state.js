@@ -36,9 +36,18 @@ function update() {
   _loadedChapter.eachPage('update');
   var start = window.performance.now(),
       diff = start - _lastUpdate,
-      pageInView = ~~(_scrollTop / 1153);
+      pageInView = ~~((_innerHeight / 2 + _scrollTop) / 1153),
+      currentPage = _loadedChapter.getPage(pageInView),
+      previousPage;
 
-  _dl.load(_loadedChapter.getPage(pageInView));
+  if (currentPage.isComplete && pageInView !== ~~(_scrollTop / 1153)) {
+    previousPage = currentPage.previous();
+    if (!previousPage.isComplete && !previousPage.isLoading) {
+      _dl.load(previousPage);
+    }
+  } else {
+    _dl.load(currentPage);
+  }
 
   // Scroll me baby
   if (_scrollStart) {
@@ -99,6 +108,7 @@ var state = {
   },
   init: function (chapter) {
     _loadedChapter = chapter;
+    this.updateWindow();
     _dl = new DownloadManager(chapter.getPage(0));
     requestAnimationFrame(update);
   }

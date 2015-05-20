@@ -1,4 +1,5 @@
 var fs = require("fs");
+  APP_DIR = require('path').dirname(require.main.filename),
 var zlib = require("zlib");
 var title = "Popopooo";
 var jsBuilder = require('./javascript-builder');
@@ -13,7 +14,7 @@ function sizeOf(bytes) {
 }
 
 function renderCss() {
-  return fs.readFileSync('/home/cdenis/services/js-page/app/style/main.css');
+  return fs.readFileSync(APP_DIR +'/app/style/main.css');
 }
 
 function renderJs() {
@@ -44,7 +45,8 @@ function buildPage() {
       ? sizeOf(size - 14000) +" over 14 kb, try reduce it !"
       : sizeOf(14000 - size) +" left under 14 kb, great job."),
     "("+ compression +" compression rate)");
-  fs.writeFileSync('/home/cdenis/services/js-page/index.html', htmlText)
+  fs.writeFileSync(APP_DIR +'/index.html', htmlText);
+
 }
 
 jsBuilder.setCallback(buildPage);

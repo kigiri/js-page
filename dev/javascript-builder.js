@@ -1,8 +1,7 @@
 var
   fs = require('fs'),
-  path = require('path'),
   minify = require('uglify-js').minify;
-  APP_DIR = path.dirname(require.main.filename),
+  APP_DIR = require('path').dirname(require.main.filename),
   __ = { updateCallback: function () {} };
 
 function formatPassedArguments(d) { return "__."+d; }

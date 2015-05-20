@@ -76,16 +76,15 @@ function updateWindow(event) {
 var state = {
   pageLoadTime: new Average(),
   updateWindow: updateWindow,
+  stopScroll: function (argument) {
+    _inertia = 0;
+    _scrollStart = false;
+  },
   watchMouse: function (event) {
-    if (event.buttons !== 1) {
-      _inertia = 0;
-      _scrollStart = false;
-      return true;
-    }
     updateWindow();
     // _xStart = _x;
-    _y = event.clientY;
     // _x = event.clientX;
+    _y = event.clientY;
     _yStart = _y;
     _scrollStart = true;
     return false;
@@ -93,10 +92,10 @@ var state = {
   mouseRelease: function () {
     _scrollStart = false;
   },
-  setMouse: function (x, y, buttons) {
-    // _x = x;
-    _y = y;
-    if (!buttons || buttons === 2) {
+  setMouse: function (event) {
+    // _x = event.clientX;
+    _y = event.clientY;
+    if (event.which !== 1) {
       _scrollStart = false;
     }
   },

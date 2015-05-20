@@ -15,7 +15,7 @@ window.onscroll = function (event) {
 window.onmouseup = $state.mouseRelease;
 
 window.onmousemove = function (event) {
-  $state.setMouse(event.clientX, event.clientY, event.buttons);
+  $state.setMouse(event);
 };
 
 window.addEventListener("orientationchange", $state.updateWindow, false);

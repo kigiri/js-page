@@ -1,0 +1,26 @@
+{
+  "name": "js-page",
+  "version": "0.1.0",
+  "description": "simple reader for comics, man(ga|hua|hwa) written in javascript",
+  "main": "app/main.js",
+  "scripts": {
+    "start": "iojs --harmony_classes --harmony_arrow_functions server.js",
+    "test": "echo 'no test yet sorry bro'"
+  },
+  "keywords": [
+    "reader",
+    "comics",
+    "manga"
+  ],
+  "author": "cdenis",
+  "license": "MIT",
+  "devDependencies": {
+    "uglify-js": "^2.4.22"
+  },
+  "dependencies": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kigiri/js-page.git"
+  }
+}

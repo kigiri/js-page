@@ -5,9 +5,14 @@ var _style = {
     overflow: 'hidden',
     position: "relative",
     overflow: "hidden",
-    width: "80rem",
-    height: "115.3rem",
-    margin: "auto"
+    width: "100%",
+    height: "115.3rem"
+  },
+
+  img: {
+    display: "block",
+    margin: "auto",
+    width: "80rem"
   },
 
   percentage: {
@@ -21,8 +26,8 @@ var _style = {
 
   details: {
     fontSize: "5rem",
-    marginTop: "-6rem",
-    paddingLeft: "2rem",
+    marginBottom: "-6rem",
+    paddingRight: "5rem",
     opacity: 0,
     transitionProperty: 'opacity',
     transitionDuration: '1s',
@@ -32,7 +37,7 @@ var _style = {
 
   loaderText: {
     position: "absolute",
-    top: "-6rem",
+    bottom: "-8rem",
     left: "-2rem",
     color: 'black',
     transform: "rotate(-5deg)",
@@ -50,10 +55,12 @@ var _style = {
   },
 
   bar: {
-    width: "100%",
+    width: "80rem",
     height: "100%",
-    position: "absolute",
+    margin: "auto",
     background: "hsl(0, 0%, 0%)",
+    outline: "0.2rem solid rgba(255, 255, 255, 0.2)",
+    outlineOffset: "-0.1rem",
     transform: "translateY(0%)",
     transitionProperty: 'transform',
     transitionDuration: '2s',
@@ -64,9 +71,9 @@ var _style = {
 function Loader() {
   this.percentage = $new.div({ style: _style.percentage });
   this.details = $new.div({ style: _style.details });
-  this.bar = $new.div({ style: _style.bar });
-  this.HTMLElement = $new.div({ style: _style.loader }, this.bar,
-    $new.div({ style: _style.loaderText }, this.percentage, this.details));
+  this.bar = $new.div({ style: _style.bar },
+    $new.div({ style: _style.loaderText }, this.details, this.percentage));
+  this.HTMLElement = $new.div({ style: _style.loader }, this.bar);
 }
 
 Loader.prototype.remove = function () {
@@ -84,7 +91,7 @@ Loader.prototype.update = function (dlState, elapsedTime) {
       ? '0' + ~~(dlState.loadRate)
       : ~~(dlState.loadRate)) +'%';
     if (elapsedTime > 3000) {
-      if (dlState.secondsLeft > 1 && dlState.loadRate < 80) {
+      if (dlState.secondsLeft > 1) {
         this.details.style.opacity = 1;
         this.details.textContent = Math.round(dlState.secondsLeft) +' secondes';
       } else {
@@ -108,7 +115,7 @@ function _generateImageLoader(page) {
   xhr.startLoad = xhr.lastNow = Date.now();
 
   xhr.onload = function () {
-    var img = $new.img();
+    var img = $new.img({ style: _style.img });
     img.src = URL.createObjectURL(new Blob([this.response], {
       type: _getContentType(xhr.getAllResponseHeaders()) || 'image/png'
     }));

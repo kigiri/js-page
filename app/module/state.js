@@ -9,6 +9,7 @@ var
   _yStart = 0,
   _lastUpdate = window.performance.now(),
   _scrollTop = 0,
+  _dl,
   _innerHeight = 0,
   _maxScroll = 0,
   _inertia = 0;
@@ -37,12 +38,7 @@ function update() {
       diff = start - _lastUpdate,
       pageInView = ~~(_scrollTop / 1153);
 
-  if (rest > 50) {
-   _loadedChapter.pageArray[pageInView+1].load();
-    _loadedChapter.pageArray[pageInView+1].update();
-  }
-  _loadedChapter.pageArray[pageInView].load();
-  _loadedChapter.pageArray[pageInView].update();
+  _dl.load(_loadedChapter.getPage(pageInView));
 
   // Scroll me baby
   if (_scrollStart) {
@@ -103,6 +99,7 @@ var state = {
   },
   init: function (chapter) {
     _loadedChapter = chapter;
+    _dl = new DownloadManager(chapter.getPage(0));
     requestAnimationFrame(update);
   }
 }

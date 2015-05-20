@@ -4,7 +4,6 @@ function Chapter(url, pageStart, pageEnd) {
     i = -1,
     pageCount = pageEnd - pageStart;
 
-  this.currentPage = 0;
   this.pageCount = pageCount;
   this.pageArray = new Array(pageCount);
   this.HTMLElement = $new.div({id: 'chapter'});
@@ -15,20 +14,20 @@ function Chapter(url, pageStart, pageEnd) {
     } else if (page < 100) {
       page = '0'+ page;
     }
-    page = new Page(url.replace(/{page}/, page), i);
+    page = new Page(url.replace(/{page}/, page), i, this);
     this.HTMLElement.appendChild(page.HTMLElement);
     this.pageArray[i] = page;
   }
 }
 
-Chapter.prototype.loadPage = function (idx) {
-  idx = Math.max(Math.min(this.pageArray.length - 1, idx), 0);
-  this.currentPage = idx;
-  this.pageArray[idx].load().then(function () {
-    if (++idx < this.pageArray.length) {
-      $state.queuePage(idx);
-    }
-  }.bind(this))
+Chapter.prototype.getPage = function (idx) {
+  if (idx < 0) {
+    return this.pageArray[0]; // should load previous chapter
+  }
+  if (idx >= this.pageCount) {
+    return this.pageArray[this.pageCount-1]; // should load next chapter
+  }
+  return this.pageArray[idx];
 };
 
 Chapter.prototype.eachPage = function (fn) {
@@ -50,10 +49,10 @@ Chapter.prototype.eachPage = function (fn) {
   return this;
 };
 
-Chapter.prototype.getPrevious = function () {
+Chapter.prototype.previous = function () {
   return this;
 }
 
-Chapter.prototype.getNext = function () {
+Chapter.prototype.next = function () {
   return this;
 };

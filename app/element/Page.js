@@ -212,3 +212,12 @@ Page.prototype.then = function (callback) {
   }
   return this;
 };
+
+Page.prototype.previous = function () {
+  return this.chapter.getPage(this.id - 1);
+}
+
+Page.prototype.next = function () {
+  return this.chapter.getPage(this.id + 1);
+};
+

@@ -1,0 +1,4 @@
+
+function Story(argument) {
+  // body...
+}

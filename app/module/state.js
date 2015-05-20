@@ -1,4 +1,3 @@
-
 var
   _mode = 'single',
   _loadedChapter,
@@ -10,18 +9,19 @@ var
   _yStart = 0,
   _lastUpdate = window.performance.now(),
   _scrollTop = 0,
+  _innerHeight = 0,
+  _maxScroll = 0,
   _inertia = 0;
 
 function reach(positionModifier, diff) {
-  var newScroll = _scrollTop + positionModifier,
-      maxScroll = document.body.offsetHeight - window.innerHeight;
+  var newScroll = _scrollTop + positionModifier;
   if (newScroll < 0) {
     window.scrollTo(0, 0);
     if (diff) {
       console.log(newScroll / diff);
     }
-  } else if (maxScroll < newScroll) {
-    window.scrollTo(0, maxScroll);
+  } else if (_maxScroll < newScroll) {
+    window.scrollTo(0, _maxScroll);
     if (diff) {
       console.log(((newScroll - maxScroll) / diff));
     }
@@ -32,10 +32,10 @@ function reach(positionModifier, diff) {
 }
 
 function update() {
+  _loadedChapter.eachPage('update');
   var start = window.performance.now(),
       diff = start - _lastUpdate,
-      pageInView = ~~((_scrollTop) / 1153),
-      rest = _scrollTop + window.innerHeight - (pageInView + 1) * 1153;
+      pageInView = ~~(_scrollTop / 1153);
 
   if (rest > 50) {
    _loadedChapter.pageArray[pageInView+1].load();
@@ -63,19 +63,30 @@ function update() {
   requestAnimationFrame(update);
 }
 
+function updateWindow(event) {
+  _innerHeight = window.innerHeight;
+  _maxScroll = document.body.offsetHeight - _innerHeight;
+}
+
 var state = {
   pageLoadTime: new Average(),
+  updateWindow: updateWindow,
   watchMouse: function (event) {
     if (event.buttons !== 1) {
       _inertia = 0;
+      _scrollStart = false;
       return true;
     }
+    updateWindow();
     // _xStart = _x;
     _y = event.clientY;
     // _x = event.clientX;
     _yStart = _y;
     _scrollStart = true;
     return false;
+  },
+  mouseRelease: function () {
+    _scrollStart = false;
   },
   setMouse: function (x, y, buttons) {
     // _x = x;

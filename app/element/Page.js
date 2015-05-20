@@ -138,9 +138,10 @@ function _generateImageLoader(page) {
   return xhr;
 };
 
-function Page(url, id) {
+function Page(url, id, chapter) {
   this.id = id;
   this.url = url;
+  this.chapter = chapter;
   this.isLoading = false;
   this.isComplete = false;
   this.initRequestData();
@@ -184,12 +185,15 @@ Page.prototype.getDownloadState = function () {
 };
 
 Page.prototype.update = function () {
-  if (this.isLoading) {
-    this.loader.update(this.getDownloadState(), this.elapsedTime);
-  } else if (this.loader !== null) {
-    this.loader.remove();
-    this.loader = null;
+  if (this.loader !== null) {
+    if (this.isLoading) {
+      this.loader.update(this.getDownloadState(), this.elapsedTime);
+    } else {
+      this.loader.remove();
+      this.loader = null;
+    }
   }
+  return this;
 }
 
 Page.prototype.load = function (debuged) {
@@ -199,6 +203,12 @@ Page.prototype.load = function (debuged) {
   return this;
 };
 
+// Function called after the document loading
 Page.prototype.then = function (callback) {
-  this.thenCallback = callback;
+  if (this.isComplete) {
+    callback();
+  } else {
+    this.thenCallback = callback;
+  }
+  return this;
 };

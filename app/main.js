@@ -5,12 +5,19 @@ $add(firstChap.HTMLElement);
 $state.init(firstChap);
 
 window.onscroll = function (event) {
-  $state.setScroll(document.body.scrollTop);
+  if (event.pageY) {
+    $state.setScroll(event.pageY);
+  } else {
+    $state.setScroll(document.body.scrollTop);
+  }
 }
 
-window.onmousemove = function (e) {
-  $state.setMouse(e.clientX, e.clientY, e.buttons);
+window.onmouseup = $state.mouseRelease;
+
+window.onmousemove = function (event) {
+  $state.setMouse(event.clientX, event.clientY, event.buttons);
 };
 
-
+window.addEventListener("orientationchange", $state.updateWindow, false);
+window.addEventListener("resize", $state.updateWindow, false);
 function main() { }

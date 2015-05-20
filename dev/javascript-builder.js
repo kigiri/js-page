@@ -16,6 +16,17 @@ var _id = 1,
     mangle: false
   };
 
+function tryMinify(filename) {
+  var ret;
+  try {
+    ret = minify(filename, uglifyConfig);
+    return ret.code;
+  } catch (err) {
+    console.log( err.message +'\n'
+      + err.filename.slice(APP_DIR.length) +':'+ err.line +':'+ err.col);
+  }
+}
+
 function dependency(path, type, name, depArray, exportName) {
   if (_dep[name] !== undefined) { throw "dependency "+ name +" already exists" }
   var filename = APP_DIR + path +'/'+ name +'.js',
@@ -27,7 +38,7 @@ function dependency(path, type, name, depArray, exportName) {
     return '// #'+ id +' - '+ type +': '+ name +'\n'
       +'__.'+ name +' = (function ('
       + depArray.map(formatArgumentsName).join(', ')
-      +') { '+ minify(filename, uglifyConfig).code + ' return '+ exportName +';})('
+      +') { '+ tryMinify(filename)+ ' return '+ exportName +';})('
       + depArray.map(formatPassedArguments).join(', ') +');\n';
   }
 
@@ -86,7 +97,6 @@ dependency('/app', 'init', "main", ["Chapter", "add", "state"]);
 module.exports = {
   setCallback: function (cb) {
     __.updateCallback = cb;
-    console.log("call back set !", cb.toString());
   },
   compile: function () {
     return Object.keys(_dep)

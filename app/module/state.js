@@ -1,14 +1,35 @@
 
-var _mode = 'single',
-    _loadedChapter,
-    _nextPageInQueue = 0,
-    // _x = 0,
-    _y = 0,
-    _scrollStart = false,
-    // _xStart = 0,
-    _yStart = 0,
-    _lastUpdate = window.performance.now(),
-    _scrollTop = 0;
+var
+  _mode = 'single',
+  _loadedChapter,
+  _nextPageInQueue = 0,
+  // _x = 0,
+  _y = 0,
+  _scrollStart = false,
+  // _xStart = 0,
+  _yStart = 0,
+  _lastUpdate = window.performance.now(),
+  _scrollTop = 0,
+  _inertia = 0;
+
+function reach(positionModifier, diff) {
+  var newScroll = _scrollTop + positionModifier,
+      maxScroll = document.body.offsetHeight - window.innerHeight;
+  if (newScroll < 0) {
+    window.scrollTo(0, 0);
+    if (diff) {
+      console.log(newScroll / diff);
+    }
+  } else if (maxScroll < newScroll) {
+    window.scrollTo(0, maxScroll);
+    if (diff) {
+      console.log(((newScroll - maxScroll) / diff));
+    }
+  } else {
+    window.scrollTo(0, newScroll);
+  }
+  _inertia = positionModifier;
+}
 
 function update() {
   var start = window.performance.now(),
@@ -25,18 +46,14 @@ function update() {
 
   // Scroll me baby
   if (_scrollStart) {
-    var newScroll = _scrollTop + (_yStart - _y),
-        maxScroll = document.body.offsetHeight - window.innerHeight;
-    if (newScroll < 0) {
-      window.scrollTo(0, 0);
-      console.log(newScroll / diff)
-    } else if (maxScroll < newScroll) {
-      window.scrollTo(0, maxScroll);
-      console.log(((newScroll - maxScroll) / diff))
-    } else {
-      window.scrollTo(0, newScroll);
-    }
+    reach(_yStart - _y, diff);
     _yStart = _y;
+  } else if (_inertia) {
+    if (_inertia > 0) {
+      reach(Math.max(0, _inertia - diff / 10));
+    } else {
+      reach(Math.min(0, _inertia + diff / 10));
+    }
   }
 
   if (window.performance.now() - start > 7) {
@@ -48,8 +65,14 @@ function update() {
 
 var state = {
   pageLoadTime: new Average(),
-  watchMouse: function () {
+  watchMouse: function (event) {
+    if (event.buttons !== 1) {
+      _inertia = 0;
+      return true;
+    }
     // _xStart = _x;
+    _y = event.clientY;
+    // _x = event.clientX;
     _yStart = _y;
     _scrollStart = true;
     return false;

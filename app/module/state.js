@@ -108,7 +108,7 @@ var state = {
   init: function (chapter) {
     _loadedChapter = chapter;
     this.updateWindow();
-    _dl = new DownloadManager(chapter.getPage(0));
+    _dl = new DownloadManager(chapter.getPage(0), $config.pageBuffer);
     requestAnimationFrame(update);
   }
 }

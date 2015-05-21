@@ -81,10 +81,11 @@ dependency.class("Average");
 dependency.class("DownloadManager");
 
 // Modules
-dependency.module("state", ["Average", "DownloadManager",]);
+dependency.module("config");
+dependency.module("state", ["Average", "DownloadManager", "config"]);
 
 // App Elements
-dependency.element("Page", ["Average", "state", "add", "new"]);
+dependency.element("Page", ["Average", "state", "add", "new", "config"]);
 dependency.element("Chapter", ["Page", "new"]);
 dependency.element("Story", ["Chapter"])
 dependency.element("View", ["Story", "new"]);

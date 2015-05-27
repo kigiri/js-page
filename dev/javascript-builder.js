@@ -1,16 +1,19 @@
 var
   fs = require('fs'),
   minify = require('uglify-js').minify,
-  APP_DIR = require('path').dirname(require.main.filename),
-  __ = { updateCallback: function () {} };
+  path = require('path'),
+  APP_DIR = path.dirname(require.main.filename);
+
+function updateCallback() {}
 
 function formatArg(d) { return d ? "__."+ d : d; }
 function formatName(d) {
+  d = path.basename(d).slice(0, -3);
   return ((d[0] === d[0].toUpperCase()) ?  d : '$'+ d);
 }
 
-var _id = 1,
-  _dep = { "__": { id: 0, value: 'var __ = {};\n'} },
+var _id = 0,
+  _dep = { },
   uglifyConfig = {
     mangle: false,
     fromString: true
@@ -27,84 +30,117 @@ function tryMinify(jsCode) {
   }
 }
 
-function dependency(path, type, name, exportName) {
-  var filename = APP_DIR + path +'/'+ name +'.js',
-      exportName = exportName || formatName(name),
-      id = Object.keys(_dep).length;
+function parseFile(path) {
+  var jsCode = fs.readFileSync(path, { encoding: "utf-8" }),
+      globals = jsCode.match(/^\/\* global (.+) \*\//);
 
-  function generate() {
-    var jsCode = fs.readFileSync(filename, { encoding: "utf-8" }),
-        globals = jsCode.match(/^\/\* global (.+) \*\//);
+  return {
+    globals: globals ? globals[1].split(', ') : null,
+    code: jsCode
+  };
+}
 
-    globals = globals ? globals[1] : '';
-    console.log(globals.split(', ').map(formatArg).join(', '));
-    return '// #'+ id +' - '+ type +': '+ name +'\n'
-      +'__.'+ exportName +' = (function ('+ globals +') { "use_strict"; '
-      + tryMinify(jsCode) +' return '+ exportName +';})('
-      + globals.split(', ').map(formatArg).join(', ') +');\n';
+function updateInfo(dep, fileInfo) {
+  dep.code = fileInfo.code;
+  dep.globals = fileInfo.globals;
+  updateCallback();
+}
+
+function dependency(path) {
+  var name = formatName(path),
+      fileInfo = parseFile(path);
+
+  function generate(fileInfo) {
+    if (fileInfo.code.indexOf("/* skip */") !== -1) {
+      return '';
+    }
+    var g = fileInfo.globals ? fileInfo.globals : [];
+    return '// '+ path.slice(APP_DIR.length) +'\n'
+      +'__.'+ name +' = (function ('+ g.join(', ') +') {'
+      +' "use_strict"; '+ tryMinify(fileInfo.code) +' return '+ name
+      +'})('+ g.map(formatArg).join(', ') +');\n';
   }
 
-  _dep[exportName] = {
-    id: id,
-    value: generate()
+  _dep[name] = {
+    name: name,
+    path: path.slice(APP_DIR.length, -3),
+    globals: fileInfo.globals,
+    code: generate(fileInfo)
   };
 
-  fs.watchFile(filename, function () {
-    var newValue = generate();
-    if (_dep[exportName].value !== newValue) {
-      _dep[exportName].value = newValue;
-      __.updateCallback();
+  fs.watchFile(path, function () {
+    var fileInfo = generate(parseFile(path)),
+        needChange = false,
+        dep = _dep[name], i;
+
+    if (dep.code !== fileInfo.code) {
+      return updateInfo(dep, fileInfo);
+    }
+    if (fileInfo.globals.length !== dep.globals.length) {
+      return updateInfo(dep, fileInfo);
+    }
+    i = -1;
+    while (++i < fileInfo.globals.length) {
+      if (dep.globals.indexOf(fileInfo.globals[i]) === -1) {
+        return updateInfo(dep, fileInfo);
+      }
     }
   });
 }
 
-["element", "module", "library", "class"].forEach(function (key) {
-  this[key] = function (a, b) {
-    return this('/app/'+ key, key, a, b);
-  }.bind(this);
-}.bind(dependency));
+function watchFolder(dirname) {
+  fs.readdirSync(dirname).forEach(function (file) {
+    var filename = dirname +'/'+ file;
+    if (fs.statSync(filename).isDirectory()) {
+      watchFolder(filename);
+    } else if (/\.js$/.test(file)) {
+      dependency(filename);
+    }
+  });
+}
 
-// Public Libraries
-// dependency.import("q", "bluebird"); (https://cdn.jsdelivr.net/bluebird/latest/bluebird.min.js 72k)
-// dependency.import("_", "lodash"); (https://raw.githubusercontent.com/lodash/lodash/3.9.0/lodash.min.js 50k)
-// dependency.import("async"); (http://cdnjs.cloudflare.com/ajax/libs/async/0.9.0/async.min.js 12k)
+watchFolder(APP_DIR +'/app');
 
-
-// My Libraries
-dependency.library("add");
-dependency.library("new");
-dependency.library("ez");
-
-// Generic Classes
-dependency.class("Average");
-dependency.class("DownloadManager");
-
-// Modules
-dependency.module("config");
-dependency.module("state");
-
-// App Elements
-dependency.element("Page");
-dependency.element("Chapter");
-dependency.element("Story");
-dependency.element("View");
-dependency.element("Input");
-dependency.element("Form");
-dependency.element("Menu");
-dependency.element("App");
-
-// Main
-dependency('/app', 'init', "main");
+function setScore(keys) {
+  var i = -1, totalScore = 0, dep;
+  while (++i < keys.length) {
+    dep = _dep[keys[i]];
+    if (!dep.globals || !dep.globals.length) {
+      dep.score = 1;
+    } else {
+      dep.score = setScore(dep.globals);
+    }
+    totalScore += dep.score;
+  }
+  return totalScore;
+}
 
 module.exports = {
   setCallback: function (cb) {
-    __.updateCallback = cb;
+    updateCallback = cb;
   },
   compile: function () {
-    return Object.keys(_dep)
-      .map(function (key) { return _dep[key]; })
-      .sort(function (a, b) { return a.id - b.id; })
-      .map(function (dep) { return dep.value; })
+    var keys = Object.keys(_dep);
+    setScore(keys);
+    return 'var __ = {};\n'
+    + keys.map(function (key) { return _dep[key]; })
+      .sort(function (a, b) {
+        if (a.score === b.score) {
+          if (a.path === b.path) {
+            if (a.name === b.name) {
+              return 0;
+            }
+            if (a.name < b.name) { return -1; }
+            return 1;
+          }
+          if (a.path < b.path) { return -1; }
+          return 1;
+        }
+        if (a.score < b.score) { return -1; }
+        return 1;
+      })
+      .map(function (dep) { return dep.code; })
+      .filter(function (code) { return !!code; })
       .join('\n');
   }
 };

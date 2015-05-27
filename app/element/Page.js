@@ -1,18 +1,12 @@
+/* global Average, $new, $state, $config, $add */
 
 var _style = {
   page: {
-    position: 'relative',
-    overflow: 'hidden',
     position: "relative",
     overflow: "hidden",
-    width: "100%",
-    height: "115.3rem"
-  },
-
-  img: {
-    display: "block",
-    margin: "auto",
-    width: "80rem"
+    backgroundSize: "contain",
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "center"
   },
 
   percentage: {
@@ -55,7 +49,6 @@ var _style = {
   },
 
   bar: {
-    width: "80rem",
     height: "100%",
     margin: "auto",
     background: "hsl(0, 0%, 0%)",
@@ -74,6 +67,8 @@ function Loader() {
   this.bar = $new.div({ style: _style.bar },
     $new.div({ style: _style.loaderText }, this.details, this.percentage));
   this.HTMLElement = $new.div({ style: _style.loader }, this.bar);
+  // generate an svg with same proportions as the image and use it as background
+  // cover to have a nice placeholder for the picture.
 }
 
 Loader.prototype.remove = function () {
@@ -103,23 +98,24 @@ Loader.prototype.update = function (dlState, elapsedTime) {
   this.bar.style.background = 'hsl(0, 0%, '+ dlState.loadRate +'%)';
 };
 
-function _getContentType(headers) {
-  return headers.match(/^Content-Type\:\s*(.*?)$/mi)[1];
+function _getContentType(xhr) {
+  return {
+    type: xhr.getAllResponseHeaders().match(/^Content-Type\:\s*(.*?)$/mi)[1]
+      || 'image/png'
+  };
 }
 
 function _generateImageLoader(page) {
   var xhr = new XMLHttpRequest();
 
-  xhr.open('GET', page.url +'?'+Date.now(), true);
+  xhr.open('GET', page.url, true);
   xhr.responseType = 'arraybuffer';
   xhr.startLoad = xhr.lastNow = Date.now();
 
   xhr.onload = function () {
-    var img = $new.img({ style: _style.img });
-    img.src = URL.createObjectURL(new Blob([this.response], {
-      type: _getContentType(xhr.getAllResponseHeaders()) || 'image/png'
-    }));
-    $add(img, page.HTMLElement);
+    page.HTMLElement.style.backgroundImage = 'url("'
+      + URL.createObjectURL(new Blob([this.response], _getContentType(this)))
+      +'")';
     page.isLoading = false;
     page.isComplete = true;
     if (page.thenCallback instanceof Function) {
@@ -143,11 +139,13 @@ function _generateImageLoader(page) {
   page.isLoading = true;
 
   return xhr;
-};
+}
 
-function Page(url, id, chapter) {
+function Page(url, id, chapter, width, height) {
   this.id = id;
   this.url = url;
+  this.width = width;
+  this.height = height;
   this.chapter = chapter;
   this.isLoading = false;
   this.isComplete = false;
@@ -158,7 +156,7 @@ function Page(url, id, chapter) {
     className: "page",
     style: _style.page,
     onmousedown: $state.watchMouse,
-    onclick: this.load.bind(this)
+    onclick: $state.handlePageClick
   }, this.loader.HTMLElement);
 }
 
@@ -171,7 +169,7 @@ Page.prototype.initRequestData = function () {
 
 Page.prototype.downloadComplete = function () {
   return this.loaded === this.total;
-}
+};
 
 Page.prototype.cancel = function () {
   var dlState = this.getDownloadState();
@@ -201,7 +199,7 @@ Page.prototype.update = function () {
     }
   }
   return this;
-}
+};
 
 Page.prototype.load = function (debuged) {
   if (!this.isLoading && !this.isComplete) {
@@ -220,9 +218,70 @@ Page.prototype.then = function (callback) {
   return this;
 };
 
+Page.prototype.detatch = function () {
+  if (this.isAttached) {
+    this.HTMLElement.remove();
+    this.isAttached = false;
+  }
+  return this;
+};
+
+Page.prototype.attach = function () {
+  if (!this.isAttached) {
+    $add(this.HTMLElement, this.chapter.HTMLElement);
+    this.isAttached = true;
+  }
+  return this; 
+};
+
+Page.prototype.isPair = function () {
+  return ((this.id % 2 ? true : false) !== $config.invertPageOrder);
+};
+
+Page.prototype.refresh = function () {
+  var style = this.HTMLElement.style,
+      w = this.width,
+      h = this.height,
+      dim = $state.getDimensions();
+
+  // strip
+  switch ($config.readingMode) {
+  case "strip":
+    style.height = ($config.fit ? ~~(dim.w / w * h) : h) +'px';
+    style.width = '100%';
+    style.backgroundPosition = 'center';
+  break;
+  case "single":
+    if ($config.fit) {
+      style.height = dim.h +'px';
+    } else {
+      style.height = ~~((dim.w / w) * h) +'px';
+    }
+    style.width = '100%';
+    style.backgroundPosition = 'center';
+  break;
+  case "double":
+    if ($config.fit) {
+      style.height = dim.h +'px';
+    } else {
+      style.height = ~~(((dim.w / 2) / w) * h) +'px';
+    }
+    if (this.isPair()) {
+      style.float = 'right';
+      style.backgroundPosition = 'left';
+    } else {
+      style.float = 'left';
+      style.backgroundPosition = 'right';
+    }
+    style.width = '50%';
+  break;
+  default: break;
+  }
+};
+
 Page.prototype.previous = function () {
   return this.chapter.getPage(this.id - 1);
-}
+};
 
 Page.prototype.next = function () {
   return this.chapter.getPage(this.id + 1);

@@ -1,17 +1,13 @@
 /* global App, $state */
 
-var firstChap = new Chapter("img/lastmant1ip001p216fr{page}hdelitoon72dpi.jpg", 4, 21);
-// var ptest =  $add(new Page("img/heavy.png", 0).load());
-$add(firstChap.HTMLElement);
-$state.init(firstChap);
+new App();
 
+// var ptest =  $add(new Page("img/heavy.png", 0).load());
 window.onscroll = function (event) {
-  if (event.pageY) {
-    $state.setScroll(event.pageY);
-  } else {
-    $state.setScroll(document.body.scrollTop);
-  }
-}
+  $state.setScroll((event.pageY !== undefined)
+    ? event.pageY
+    : document.body.scrollTop);
+};
 
 window.onmouseup = $state.mouseRelease;
 
@@ -21,4 +17,9 @@ window.onmousemove = function (event) {
 
 window.addEventListener("orientationchange", $state.updateWindow, false);
 window.addEventListener("resize", $state.updateWindow, false);
-function main() { }
+// window.addEventListener("touchstart", $state.touchStart, false);
+// window.addEventListener("touchend", $state.touchEnd, false);
+// window.addEventListener("touchleave", $state.touchEnd, false);
+// window.addEventListener("touchcancel", $state.touchEnd, false);
+function $main() {}
+

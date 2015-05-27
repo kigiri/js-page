@@ -1,1 +1,1 @@
-function ez() {};
+function $ez() {};

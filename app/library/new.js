@@ -1,3 +1,4 @@
+/* global $add */
 
 function __generate_new__() {
   var
@@ -26,14 +27,27 @@ function __generate_new__() {
 
   return elem;
 }
-var $new = __generate_new__.bind({key: "div"});
-$new.div = $new;
+
+function $new(key) {
+  __generate_new__.bind({key: key || "div"});
+}
 
 [
   "b",
   "i",
   "s",
+  "div",
   "img",
-  "span"
+  "span",
+  "input",
+  "label",
+  "color",
+  "legend",
+  "option",
+  "select",
+  "fieldset",
+  "datalist",
+  "textarea",
+  "form"
 ].forEach(function (key) { $new[key] = __generate_new__.bind({key: key}); });
 

@@ -1,3 +1,5 @@
+/* global Page, $new */
+
 function Chapter(url, pageStart, pageEnd) {
   var
     page,
@@ -14,7 +16,7 @@ function Chapter(url, pageStart, pageEnd) {
     } else if (page < 100) {
       page = '0'+ page;
     }
-    page = new Page(url.replace(/{page}/, page), i, this);
+    page = new Page(url.replace(/{page}/, page), i, this, 800, 1153);
     this.HTMLElement.appendChild(page.HTMLElement);
     this.pageArray[i] = page;
   }
@@ -51,7 +53,7 @@ Chapter.prototype.eachPage = function (fn) {
 
 Chapter.prototype.previous = function () {
   return this;
-}
+};
 
 Chapter.prototype.next = function () {
   return this;

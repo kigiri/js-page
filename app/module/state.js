@@ -1,3 +1,5 @@
+/* global DownloadManager, $config */
+
 var
   _mode = 'single',
   _loadedChapter,

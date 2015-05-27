@@ -1,24 +1,25 @@
 var
   fs = require('fs'),
-  minify = require('uglify-js').minify;
+  minify = require('uglify-js').minify,
   APP_DIR = require('path').dirname(require.main.filename),
   __ = { updateCallback: function () {} };
 
-function formatPassedArguments(d) { return "__."+d; }
-function formatArgumentsName(d) {
+function formatArg(d) { return d ? "__."+ d : d; }
+function formatName(d) {
   return ((d[0] === d[0].toUpperCase()) ?  d : '$'+ d);
 }
 
 var _id = 1,
   _dep = { "__": { id: 0, value: 'var __ = {};\n'} },
   uglifyConfig = {
-    mangle: false
+    mangle: false,
+    fromString: true
   };
 
-function tryMinify(filename) {
+function tryMinify(jsCode) {
   var ret;
   try {
-    ret = minify(filename, uglifyConfig);
+    ret = minify(jsCode, uglifyConfig);
     return ret.code;
   } catch (err) {
     console.log( err.message +'\n'
@@ -26,42 +27,40 @@ function tryMinify(filename) {
   }
 }
 
-function dependency(path, type, name, depArray, exportName) {
-  if (_dep[name] !== undefined) { throw "dependency "+ name +" already exists" }
+function dependency(path, type, name, exportName) {
   var filename = APP_DIR + path +'/'+ name +'.js',
-      depArray = Array.isArray(depArray) ? depArray : [],
-      exportName = exportName || name,
+      exportName = exportName || formatName(name),
       id = Object.keys(_dep).length;
 
   function generate() {
+    var jsCode = fs.readFileSync(filename, { encoding: "utf-8" }),
+        globals = jsCode.match(/^\/\* global (.+) \*\//);
+
+    globals = globals ? globals[1] : '';
+    console.log(globals.split(', ').map(formatArg).join(', '));
     return '// #'+ id +' - '+ type +': '+ name +'\n'
-      +'__.'+ name +' = (function ('
-      + depArray.map(formatArgumentsName).join(', ')
-      +') { '+ tryMinify(filename)+ ' return '+ exportName +';})('
-      + depArray.map(formatPassedArguments).join(', ') +');\n';
+      +'__.'+ exportName +' = (function ('+ globals +') { "use_strict"; '
+      + tryMinify(jsCode) +' return '+ exportName +';})('
+      + globals.split(', ').map(formatArg).join(', ') +');\n';
   }
 
-  _dep[name] = {
+  _dep[exportName] = {
     id: id,
     value: generate()
   };
 
   fs.watchFile(filename, function () {
     var newValue = generate();
-    if (_dep[name].value !== newValue) {
-      _dep[name].value = newValue;
+    if (_dep[exportName].value !== newValue) {
+      _dep[exportName].value = newValue;
       __.updateCallback();
     }
   });
 }
 
-dependency.import = function (a, b) {
-  return this("/app/import", "import", a, [], b)
-}.bind(dependency);
-
 ["element", "module", "library", "class"].forEach(function (key) {
-  this[key] = function (a, b, c) {
-    return this('/app/'+ key, key, a, b, c);
+  this[key] = function (a, b) {
+    return this('/app/'+ key, key, a, b);
   }.bind(this);
 }.bind(dependency));
 
@@ -73,7 +72,7 @@ dependency.import = function (a, b) {
 
 // My Libraries
 dependency.library("add");
-dependency.library("new", ["add"], "$new");
+dependency.library("new");
 dependency.library("ez");
 
 // Generic Classes
@@ -82,17 +81,20 @@ dependency.class("DownloadManager");
 
 // Modules
 dependency.module("config");
-dependency.module("state", ["Average", "DownloadManager", "config"]);
+dependency.module("state");
 
 // App Elements
-dependency.element("Page", ["Average", "state", "add", "new", "config"]);
-dependency.element("Chapter", ["Page", "new"]);
-dependency.element("Story", ["Chapter"])
-dependency.element("View", ["Story", "new"]);
-dependency.element("App", ["View", "add", "new"]);
+dependency.element("Page");
+dependency.element("Chapter");
+dependency.element("Story");
+dependency.element("View");
+dependency.element("Input");
+dependency.element("Form");
+dependency.element("Menu");
+dependency.element("App");
 
 // Main
-dependency('/app', 'init', "main", ["Chapter", "add", "state"]);
+dependency('/app', 'init', "main");
 
 module.exports = {
   setCallback: function (cb) {

@@ -1,3 +1,4 @@
+/* global App, $state */
 
 var firstChap = new Chapter("img/lastmant1ip001p216fr{page}hdelitoon72dpi.jpg", 4, 21);
 // var ptest =  $add(new Page("img/heavy.png", 0).load());

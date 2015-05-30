@@ -9,6 +9,9 @@ window.onpopstate = function(event) {
 var $history = {
   go: _h.go.bind(_h),
   add: _h.pushState.bind(_h),
-  set: _h.replaceState.bind(_h)
+  set: _h.replaceState.bind(_h),
+  goHome: function () {
+    _h.replaceState(null, "Home", "/");
+  }
 };
 

@@ -2,28 +2,14 @@
 
 var _ = {
   story: '',
-  view: {},
+  data: {},
   team: '',
   chapter: '',
-  view: 'read',
+  view: '',
   page: ''
 };
 
 // website/read/all-you-need-is-kill/team/MTO/chapter/5/page/2
-
-function getTitle() {
-  return _.view.title +" - Chapter "+ _.chapter +" Page "+ _.page;
-}
-
-function getUrl() {
-  return [_.view, _.story, _.team, "chapter", _.chapter, "page", _.page].join('/');
-}
-
-function save() {
-  if (_.view === 'read') {
-    $history.add(_.view, getTitle(), getUrl());
-  }
-}
 
 function change(key, value) {
   if (_[key] !== value && _[key] !== undefined) {
@@ -37,16 +23,22 @@ function change(key, value) {
 var $url = {
   init: function () {
     var args = window.location.pathname.split('/').filter($ez.removeEmpty);
-    switch (args[0]) {
-      case 'read':
-        _.story = args[1];
-        args = args.slice(2);
-        var i = 0;
-        while (++i < args.length) {
-          change(args[i-1], args[i]);
-        }
-      default: break; // view not found, rewrite to home
+    var i = 2, arg, val, route = _routes[args[0]];
+
+    if (!route || route.__set__(args[1]) === false) {
+      $history.goHome();
+      return _;
     }
+
+    while (i < args.length) {
+      arg = route[args[i]];
+      if (typeof arg !== "function") {
+        break;
+      }
+      route[args[i]] = arg.bind({val: args[i + 1]});
+      i += 2;
+    }
+    route.__apply__();
     return _;
   },
   set: function (updatedKeys) {
@@ -56,3 +48,48 @@ var $url = {
   }
 };
 
+function validateInt(val) {
+  var v = parseInt(val);
+  if (isNaN(v)) {
+    return false;
+  }
+  return v;
+}
+
+var _routes = {
+  story: {
+    __set__: function (val) {
+      // should check if val is existing story
+      if (!val) { return false; }
+      _.story = val;
+    },
+    __apply__: function () {
+      var path = "/story/" + _.story + '/';
+      Object.keys(_routes.story).forEach(function (key) {
+        if (/^__(.+)__$/.test(key)) { return; }
+        var val;
+        val = _routes.story[key]();
+        _[key] = val;
+        path += key +'/'+ val +'/';
+      });
+      $history.set(null, "getTitle()", path);
+    },
+    team: function () {
+      return "MTO";
+    },
+    chapter: function () {
+      this.val = validateInt(this.val);
+      if (this.val === false) {
+        this.val = "last";
+      }
+      return this.val;
+    },
+    page: function () {
+      this.val = validateInt(this.val);
+      if (this.val === false) {
+        this.val = 0;
+      }
+      return this.val;
+    },
+  }
+}

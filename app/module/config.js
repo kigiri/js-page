@@ -1,5 +1,3 @@
-/* global Task */
-
 // init config update tasks
 
 var $config = {
@@ -14,7 +12,10 @@ var $config = {
 var _tasks = {};
 
 function callTask(t) {
-  if (t instanceof Task) {
+  if (!t) { return; }
+  if (typeof t === "function") {
+    t();
+  } else if (typeof t.request === "function") {
     t.request();
   }
 }
@@ -25,3 +26,12 @@ $config.set = function (key, value) {
     callTask(_tasks[key]);
   }
 };
+
+$config.init = function (i18n, bg) {
+  _tasks.lang = function () {
+    i18n.set($config.lang);
+  };
+  _tasks.background = bg;
+}
+
+

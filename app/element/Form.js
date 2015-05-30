@@ -13,7 +13,7 @@ function Form(attrs, inputs) {
 
   this.inputs = {};
   var formContent = Object.keys(inputs).map(function (key) {
-    var input = new Input(key, $i18n.build(i18nBase +"_"+ key.toUpperCase()), inputs[key]);
+    var input = new Input(key, i18nBase +"_"+ key.toUpperCase(), inputs[key]);
     this.inputs[key] = input;
     return $new.div({style: _style}, input.label, input.HTMLElement);
   }.bind(this));

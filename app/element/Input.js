@@ -1,4 +1,4 @@
-/* global $new, $loop */
+/* global $new, $loop, $i18n */
 
  // generic attributes :
  // * disabled
@@ -47,7 +47,7 @@ var generator = {
       return $new.option(({
         value: optsValue,
         selected: data.value === optsValue
-      }), i18n("_OPTS_"+ optsValue.toUpperCase()));
+      }), i18n +"_OPTS_"+ optsValue.toUpperCase());
     }));
   },
   date: (hasInput('date', 'invalidDate')
@@ -92,13 +92,13 @@ function Input(name, i18n, data) {
   var el;
 
   data = data || {};
-  this.label = $new.label({ style: _style.label, htmlFor: name }, i18n("_NAME"));
+  this.label = $new.label({ style: _style.label, htmlFor: name }, i18n +"_NAME");
   el = generator[data.type || "string"](i18n, data);
   el.name = name;
   el.id = name;
-  el.title = i18n("_DESC");
   el.disabled = !!data.disabled;
   el.readonly = !!data.readonly;
+  $i18n.bake(i18n +"_DESC", el, "title");
   if (data.onchange instanceof Function) {
     switch (data.type) {
       case 'textarea':

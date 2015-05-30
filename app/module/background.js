@@ -1,10 +1,11 @@
 /* global $config, $loop */
 
 function $background() {
-  $background = function () {
+  var task = $loop.backgroundChange.sub(function () {
     document.body.style.backgroundColor = $config.background;
-  }
-  $loop.backgroundChange.sub($background);
+    this.cancel();
+  });
+  $background = task.request.bind(task);
   $background();
 }
 

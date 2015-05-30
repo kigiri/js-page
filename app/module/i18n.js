@@ -1,5 +1,7 @@
-var _availableTraductions = [ "en", "fr" ],
-    _selectedLang = 0;
+/* global $config */
+
+var _langArray = [ "en", "fr" ],
+    _selectedLang = 1;
 
 var textData = {
   FORM_CONFIG_BACKGROUND_NAME: [ "Background", "Fond" ],
@@ -36,19 +38,42 @@ function $i18n(key) {
   return textData[key][_selectedLang];
 }
 
-$i18n.build = function (base) {
-  return function (key) {
-    return textData[base + key][_selectedLang];
+$i18n.init = function (loop) {
+  var translateTask = loop.get("translate").sub(function () {
+    var i = -1, text;
+    while (++i < _watchedTextNodes.length) {
+      text = _watchedTextNodes[i];
+      text.node[text.nodekey] = $i18n(text.datakey);
+    }
+  });
+
+  $i18n.set = function (languageKey) {
+    _selectedLang = Math.max(_langArray.indexOf(languageKey), 0);
+    translateTask.request();
+    return _selectedLang;
   };
 };
 
-$i18n.set = function (languageKey) {
-  for (var i = 0; i < _availableTraductions.length; i++) {
-    if (_availableTraductions[i] === languageKey) {
-      _selectedLang = i;
-      return _selectedLang;
+var _watchedTextNodes = [];
+
+$i18n.bake = function (key, node, nodekey) {
+  var value = $i18n(key);
+  if (value) {
+    if (node) {
+      nodekey = nodekey || 'data';
+      node[nodekey] = value;
+    } else {
+      node = document.createTextNode(value);
+      nodekey = 'nodeValue';
     }
+    _watchedTextNodes.push({
+      node: node,
+      nodekey: nodekey,
+      datakey: key
+    });
+    return node;
   }
-  _selectedLang = 0;
-  return _selectedLang;
+  return document.createTextNode(key);
 };
+
+_selectedLang = Math.max(_langArray.indexOf($config.lang), 0);

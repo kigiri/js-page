@@ -1,7 +1,8 @@
+/* global $i18n */
 
 function $add(newChild, parent, position) {
   if (typeof newChild === "string") {
-    newChild = document.createTextNode(newChild);
+    newChild = $i18n.bake(newChild);
   } else if (Array.isArray(newChild)) {
     var i = -1, len = newChild.length, ret;
     while (++i < len) {

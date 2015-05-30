@@ -9,6 +9,7 @@ $tasks.init = function () {
     "backgroundChange",
     "nextPage",
     "previousPage",
+    "translate",
     "storyLoad",
     "resize",
   ].forEach(function (key, priority) {

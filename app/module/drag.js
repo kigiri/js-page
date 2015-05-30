@@ -1,9 +1,9 @@
-/* global $loop, $state */
+/* global $state */
 
 var _task,
     _inertia = 0,
     _previousY = 0,
-    _scrollStart = null;
+    _dragStart = null;
 
 
 function reach(positionModifier, diff) {
@@ -24,20 +24,22 @@ function reach(positionModifier, diff) {
   _inertia = positionModifier;
 }
 
-var $scroll = {
+var $drag = {
   stop: function () {
-   _scrollStart = false; 
+   _dragStart = false; 
   },
   freeze: function () {
-    _scrollStart = false;
+    _dragStart = false;
     _inertia = 0;
   }
 };
 
-$scroll.start = function () {
-  if ($config.readingMode !== "strip") { return; }
+function canDrag() { return $state.View.type === "story"; }
+
+$drag.start = function () {
+  if (!canDrag()) { return; }
   $loop.get().sub(function (e) {
-    if (_scrollStart) {
+    if (_dragStart) {
       reach(_previousY - $state.y, e.diff);
       _previousY = $state.y;
     } else if (_inertia) {
@@ -48,10 +50,12 @@ $scroll.start = function () {
       }
     }
   });
-  $scroll.start = function () {
-    if ($config.readingMode !== "strip") { return; }
-    _previousY = $state.y;
-    _scrollStart = true;
-  }
-  $scroll.start();
+  $drag.start = function () {
+    if (canDrag()) {
+      _previousY = $state.y;
+      _dragStart = true;
+    }
+  };
+  $drag.start();
 };
+

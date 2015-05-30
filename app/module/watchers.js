@@ -1,4 +1,4 @@
-/* global $state, $scroll, $task */
+/* global $state, $drag, $task */
 
 // Watch DOM events, update $state and if needed triggers tasks.
 
@@ -27,7 +27,7 @@ $watchers.mouseDown = function (event) {
   updateWindow();
   $state.x = event.clientX;
   $state.y = event.clientY;
-  $scroll.start();
+  $drag.start();
   return false;
 };
 
@@ -38,12 +38,12 @@ window.onscroll = function (event) {
   window.onscroll(event);
 };
 
-window.onmouseup = $scroll.stop;
+window.onmouseup = $drag.stop;
 
 window.onmousemove = function (event) {
   $state.y = event.clientY;
   if (event.which !== 1) {
-    $scroll.stop();
+    $drag.stop();
   }
 };
 

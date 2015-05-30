@@ -1,9 +1,9 @@
-/* global $new, $state */
+/* global $new, $loop */
 
-/* generic attributes :
- * disabled
- * readonly
- */
+ // generic attributes :
+ // * disabled
+ // * readonly
+ 
 
 var _style = {
   label: {
@@ -100,7 +100,6 @@ function Input(name, i18n, data) {
   el.disabled = !!data.disabled;
   el.readonly = !!data.readonly;
   if (data.onchange instanceof Function) {
-    console.log('adding', el.name);
     switch (data.type) {
       case 'textarea':
       case 'text':
@@ -129,16 +128,13 @@ function watch(HTMLInput, onchange) {
   _len++;
 }
 
-function updateInputs() {
+Input.task = $loop.get("input").sub(function (e) {
   var i = -1, inputInfo;
   while (++i < _len) {
     inputInfo = _watchedInputs[i];
     if (inputInfo.value !== inputInfo.HTMLInput.value) {
-      console.log(inputInfo.value, '->', inputInfo.HTMLInput.value);
       inputInfo.value = inputInfo.HTMLInput.value;
       inputInfo.onchange.call(inputInfo.HTMLInput);
     }
   }
-}
-
-$state.addToUpdate(updateInputs);
+});

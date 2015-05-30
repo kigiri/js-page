@@ -1,4 +1,4 @@
-/* global Average, $new, $state, $config, $add */
+/* global Average, ImageLoader, $new, $state, $config, $add, $mousedown */
 
 var _style = {
   page: {
@@ -29,7 +29,7 @@ var _style = {
     float: 'right'
   },
 
-  loaderText: {
+  progressText: {
     position: "absolute",
     bottom: "-8rem",
     left: "-2rem",
@@ -37,7 +37,7 @@ var _style = {
     transform: "rotate(-5deg)",
   },
 
-  loader: {
+  progress: {
     width: "100%",
     height: "100%",
     position: "absolute",
@@ -61,24 +61,24 @@ var _style = {
   },
 };
 
-function Loader() {
+function Progress() {
   this.percentage = $new.div({ style: _style.percentage });
   this.details = $new.div({ style: _style.details });
   this.bar = $new.div({ style: _style.bar },
-    $new.div({ style: _style.loaderText }, this.details, this.percentage));
-  this.HTMLElement = $new.div({ style: _style.loader }, this.bar);
+    $new.div({ style: _style.progressText }, this.details, this.percentage));
+  this.HTMLElement = $new.div({ style: _style.progress }, this.bar);
   // generate an svg with same proportions as the image and use it as background
   // cover to have a nice placeholder for the picture.
 }
 
-Loader.prototype.remove = function () {
+Progress.prototype.remove = function () {
   this.HTMLElement.style.opacity = 0;
   this.HTMLElement.addEventListener('transitionend', function () {
     this.HTMLElement.remove();
   }.bind(this));
 };
 
-Loader.prototype.update = function (dlState, elapsedTime) {
+Progress.prototype.update = function (dlState, elapsedTime) {
   dlState.loadRate = dlState.loadRate * 100;
   if (elapsedTime > 500) {
     this.percentage.style.opacity = 1;
@@ -98,66 +98,52 @@ Loader.prototype.update = function (dlState, elapsedTime) {
   this.bar.style.background = 'hsl(0, 0%, '+ dlState.loadRate +'%)';
 };
 
-function _getContentType(xhr) {
-  return {
-    type: xhr.getAllResponseHeaders().match(/^Content-Type\:\s*(.*?)$/mi)[1]
-      || 'image/png'
-  };
-}
+function generatePageLoader(page) {
+  var _lastNow = Date.now(),
+      _startLoad = _lastNow;
 
-function _generateImageLoader(page) {
-  var xhr = new XMLHttpRequest();
+  page.isLoading = true;
 
-  xhr.open('GET', page.url, true);
-  xhr.responseType = 'arraybuffer';
-  xhr.startLoad = xhr.lastNow = Date.now();
+  return ImageLoader(page.url).onprogress(function (event) {
+    var now = Date.now(), loadRate;
 
-  xhr.onload = function () {
-    page.HTMLElement.style.backgroundImage = 'url("'
-      + URL.createObjectURL(new Blob([this.response], _getContentType(this)))
-      +'")';
+    page.total = event.total;
+    page.elapsedTime = now - _startLoad;
+    page.lastByteRate.add((now - _lastNow) / (event.loaded - page.loaded));
+    _lastNow = now;
+    page.loaded = event.loaded;
+    loadRate = event.loaded / event.total;
+    page.estimatedEnd = now + ((((1 / loadRate - loadRate) * page.elapsedTime)
+      + ((event.total - event.loaded) * page.lastByteRate.get())) / 2);
+  })
+  .then(function (objectURL) {
+    page.HTMLElement.style.backgroundImage = 'url("'+ objectURL +'")';
     page.isLoading = false;
     page.isComplete = true;
     if (page.thenCallback instanceof Function) {
       page.thenCallback.call(page);
     }
-  };
-
-  xhr.onprogress = function (event) {
-    var now = Date.now(), loadRate;
-    page.total = event.total;
-    page.elapsedTime = now - this.startLoad;
-    page.lastByteRate.add((now - this.lastNow) / (event.loaded - page.loaded));
-    this.lastNow = now;
-    page.loaded = event.loaded;
-    loadRate = event.loaded / event.total;
-    page.estimatedEnd = now + ((((1 / loadRate - loadRate) * page.elapsedTime)
-      + ((event.total - event.loaded) * page.lastByteRate.get())) / 2);
-  };
-
-  xhr.send(null);
-  page.isLoading = true;
-
-  return xhr;
+  });
 }
 
-function Page(url, id, chapter, width, height) {
-  this.id = id;
-  this.url = url;
-  this.width = width;
-  this.height = height;
+function Page(chapter, pageInfo) {
+  this.index = pageInfo.index;
+  this.url = chapter.path +'/'+ pageInfo.path;
+  this.width = pageInfo.width;
+  this.height = pageInfo.height;
+  this.isWide = (pageInfo.width > pageInfo.height);
   this.chapter = chapter;
   this.isLoading = false;
   this.isComplete = false;
   this.initRequestData();
-  this.loader = new Loader();
+  this.progress = new Progress();
   this.HTMLElement = $new.div({
-    id: "page-"+ id,
+    id: "page-"+ this.index,
     className: "page",
     style: _style.page,
-    onmousedown: $state.watchMouse,
+    onmousedown: $watchers.mouseDown,
     onclick: $state.handlePageClick
-  }, this.loader.HTMLElement);
+  }, this.progress.HTMLElement);
 }
 
 Page.prototype.initRequestData = function () {
@@ -174,7 +160,7 @@ Page.prototype.downloadComplete = function () {
 Page.prototype.cancel = function () {
   var dlState = this.getDownloadState();
   if (this.isLoading && (dlState.secondsLeft > 2 || dlState.loadRate < 0.75)) {
-    this.xhr.abort();
+    this.imageLoader.abort();
     this.initRequestData();
   }
   this.isLoading = false;
@@ -190,12 +176,12 @@ Page.prototype.getDownloadState = function () {
 };
 
 Page.prototype.update = function () {
-  if (this.loader !== null) {
+  if (this.progress !== null) {
     if (this.isLoading) {
-      this.loader.update(this.getDownloadState(), this.elapsedTime);
+      this.progress.update(this.getDownloadState(), this.elapsedTime);
     } else if (this.isComplete) {
-      this.loader.remove();
-      this.loader = null;
+      this.progress.remove();
+      this.progress = null;
     }
   }
   return this;
@@ -203,7 +189,7 @@ Page.prototype.update = function () {
 
 Page.prototype.load = function (debuged) {
   if (!this.isLoading && !this.isComplete) {
-    this.xhr = _generateImageLoader(this, debuged);
+    this.imageLoader = generatePageLoader(this, debuged);
   }
   return this;
 };
@@ -235,36 +221,37 @@ Page.prototype.attach = function () {
 };
 
 Page.prototype.isPair = function () {
-  return ((this.id % 2 ? true : false) !== $config.invertPageOrder);
+  return ((this.index % 2 ? true : false) !== $config.invertPageOrder);
 };
 
 Page.prototype.refresh = function () {
   var style = this.HTMLElement.style,
       w = this.width,
       h = this.height,
-      dim = $state.getDimensions();
+      sW = $state.width,
+      sH = $state.height;
 
   // strip
   switch ($config.readingMode) {
   case "strip":
-    style.height = ($config.fit ? ~~(dim.w / w * h) : h) +'px';
+    style.height = ($config.fit ? ~~(sW / w * h) : h) +'px';
     style.width = '100%';
     style.backgroundPosition = 'center';
   break;
   case "single":
     if ($config.fit) {
-      style.height = dim.h +'px';
+      style.height = sH +'px';
     } else {
-      style.height = ~~((dim.w / w) * h) +'px';
+      style.height = ~~((sW / w) * h) +'px';
     }
     style.width = '100%';
     style.backgroundPosition = 'center';
   break;
   case "double":
     if ($config.fit) {
-      style.height = dim.h +'px';
+      style.height = sH +'px';
     } else {
-      style.height = ~~(((dim.w / 2) / w) * h) +'px';
+      style.height = ~~(((sW / 2) / w) * h) +'px';
     }
     if (this.isPair()) {
       style.float = 'right';
@@ -280,10 +267,10 @@ Page.prototype.refresh = function () {
 };
 
 Page.prototype.previous = function () {
-  return this.chapter.getPage(this.id - 1);
+  return this.chapter.getPage(this.index - 1);
 };
 
 Page.prototype.next = function () {
-  return this.chapter.getPage(this.id + 1);
+  return this.chapter.getPage(this.index + 1);
 };
 

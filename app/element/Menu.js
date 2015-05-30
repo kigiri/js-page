@@ -1,4 +1,4 @@
-/* global Form, $new, $config, $state */
+/* global Form, $new, $config */
 // https://developer.mozilla.org/fr/docs/Web/HTML/Element/Input
 var _style = {
   input: {
@@ -26,19 +26,8 @@ var _style = {
   }
 };
 
-
 function applyToConfig() {
-  switch (this.type) {
-    case "checkbox":
-      if ($config[this.name] !== this.checked) {
-        $config[this.name] = this.checked;
-      } break;
-    default:
-      if ($config[this.name] !== this.value) {
-        $config[this.name] = this.value;
-      } break;
-  }
-  $state.requestLayoutRefresh();
+  $config.set(this.name, this.type === "checkbox" ? this.checked : this.value);
 }
 
 function Menu() {
@@ -89,3 +78,4 @@ function Menu() {
   });
   this.HTMLElement = $new.div({id: "menu", style: _style.menu}, this.config.HTMLElement);
 }
+

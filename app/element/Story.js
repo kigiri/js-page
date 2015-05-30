@@ -1,9 +1,21 @@
-/* global Chapter, $state, $new */
+/* global Chapter, $state, $new, $url */
 
-function Story() {
-  var firstChap = new Chapter("img/lastmant1ip001p216fr{page}hdelitoon72dpi.jpg", 4, 21);
-  $state.init(firstChap);
+//
+
+function Story(storyInfo) {
+  $url.getPage();
+  $url.getTeam();
+  $url.getChapter();
+  var firstChap = new Chapter(this, storyInfo.teams[this.team][0]);
+  this.dl = new DownloadManager(firstChap, $config.pageBuffer);
+  this.path = storyInfo.path;
+  this.availableTeams = Object.keys(storyInfo.teams);
   this.HTMLElement = $new.div({
     id: "story"
   }, firstChap.HTMLElement, $new.div({style: { clear: "both" }}));
 }
+
+Story.prototype.openPage = function (chapterIndex, pageIndex) {
+
+};
+

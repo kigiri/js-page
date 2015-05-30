@@ -1,25 +1,17 @@
 /* global Page, $new */
 
-function Chapter(url, pageStart, pageEnd) {
-  var
-    page,
-    i = -1,
-    pageCount = pageEnd - pageStart;
-
-  this.pageCount = pageCount;
-  this.pageArray = new Array(pageCount);
-  this.HTMLElement = $new.div({id: 'chapter'});
-  while (++i < pageCount) {
-    page = i + pageStart + 1;
-    if (page < 10) {
-      page = '00'+ page;
-    } else if (page < 100) {
-      page = '0'+ page;
-    }
-    page = new Page(url.replace(/{page}/, page), i, this, 800, 1153);
-    this.HTMLElement.appendChild(page.HTMLElement);
-    this.pageArray[i] = page;
-  }
+function Chapter(story, team, chapterInfo) {
+  this.story = story;
+  this.team = team;
+  this.pageCount = chapterInfo.pages.length;
+  this.index = chapterInfo.index;
+  this.path = story.path +'/'+ team +'/'+ chapterInfo.path;
+  this.HTMLElement = $new.div({ id: 'chapter-'+ this.index });
+  this.pageArray = chapterInfo.pages.sort(function (a, b) {
+    return a.index - b.index;
+  }).map(function (page) {
+    return new new Page(this, page);
+  }.bind(this));
 }
 
 Chapter.prototype.getPage = function (idx) {
@@ -33,9 +25,8 @@ Chapter.prototype.getPage = function (idx) {
 };
 
 Chapter.prototype.eachPage = function (fn) {
-  var
-    i = -1,
-    len = this.pageArray.length;
+  var i = -1,
+      len = this.pageArray.length;
 
   switch (typeof fn) {
     case "string":
@@ -51,10 +42,16 @@ Chapter.prototype.eachPage = function (fn) {
   return this;
 };
 
+Chapter.prototype.update = function () {
+
+};
+
 Chapter.prototype.previous = function () {
-  return this;
+  return this.story.teams[this.team].chapters[this.id - 1] || this;
 };
 
 Chapter.prototype.next = function () {
-  return this;
+  return this.story.teams[this.team].chapters[this.id + 1] || this;
 };
+
+

@@ -28,7 +28,7 @@ function buildPage() {
     '<style type="text/css">',
     renderCss(),
     '</style>',
-    '</head><body><div id="size"></div>',
+    '</head><body><div id="size" style="visibility:hidden; position: fixed; right: 0; bottom: 0"></div>',
     '<script type="text/javascript">',
     renderJs(),
     '/* __$$__ */',
@@ -45,7 +45,7 @@ function buildPage() {
       : sizeOf(14000 - size) +" left under 14 kb, great job."),
     "("+ compression +" compression rate)");
   fs.writeFileAsync(APP_DIR +'/public/index.html', htmlText);
-  fs.writeFileAsync(APP_DIR +'/public/read/index.html', htmlText);
+  fs.writeFileAsync(APP_DIR +'/public/story/index.html', htmlText);
 }
 
 jsBuilder.setCallback(buildPage);

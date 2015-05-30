@@ -3,9 +3,10 @@ const _ = require("lodash"),
       $path = require('path'),
       $fs = require('fs'),
       $readDir = $fs.readdirAsync,
+      $readFile = $fs.readFileAsync,
       $write = $fs.writeFileAsync,
       APP_DIR = $path.dirname(require.main.filename),
-      IMG_DIR = $path.join(APP_DIR, 'img');
+      IMG_DIR = $path.join(APP_DIR, 'public/assets');
 
 function getTeamChapters(storypath, teampath) {
   let dirpath = $path.join(storypath, teampath);
@@ -49,14 +50,21 @@ function getTeamChapters(storypath, teampath) {
 function openStory(story) {
   let basepath = $path.join(IMG_DIR, story.path);
   $readDir(basepath)
-  .filter(filename => !/\.json$/i.test(filename))
+  .filter(filename => !/\.(json|html)$/i.test(filename))
   .each(subdir => {
     return getTeamChapters(basepath, subdir)
     .then(chapters => {
       story.teams[subdir] = { chapters };
     });
   }).then(() => {
-    return $write($path.join(basepath, "data.json"), JSON.stringify(story))
+    story = JSON.stringify(story);
+    // $readFile(APP_DIR +'/public/index.html', {encoding: "utf-8"})
+    // .then(txt => {
+    //   let s = story.replace(/"([a-z0-9]+)":/ig, '$1:');
+    //   txt = txt.replace('/\* __\$\$__ \*/', `\n__.$stories.set(${s});`);
+    //   $write($path.join(basepath, "index.html"), txt);
+    // });
+    $write($path.join(basepath, "data.json"), story);
   })
   .catch(console.error.bind(console));
 }

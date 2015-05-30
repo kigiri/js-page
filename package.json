@@ -20,7 +20,7 @@
   "dependencies": {
     "bluebird": "^2.9.26",
     "image-size": "^0.3.5",
-    "lodash": "^3.9.3",
+    "lodash": "^3.9.3"
   },
   "repository": {
     "type": "git",

@@ -30,6 +30,7 @@ function buildPage() {
     '</head><body><div id="size"></div>',
     '<script type="text/javascript">',
     renderJs(),
+    '/* __$$__ */',
     '</script>',
     '</body></html>'
   ].join('\n');
@@ -42,8 +43,8 @@ function buildPage() {
       ? sizeOf(size - 14000) +" over 14 kb, try reduce it !"
       : sizeOf(14000 - size) +" left under 14 kb, great job."),
     "("+ compression +" compression rate)");
-  fs.writeFileSync(APP_DIR +'/index.html', htmlText);
-
+  fs.writeFileAsync(APP_DIR +'/public/index.html', htmlText);
+  fs.writeFileAsync(APP_DIR +'/public/read/index.html', htmlText);
 }
 
 jsBuilder.setCallback(buildPage);

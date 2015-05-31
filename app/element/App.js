@@ -4,7 +4,14 @@ function App() {
   this.View = $state.View = new View();
   this.Menu = $state.Menu = new Menu();
   this.HTMLElement = $new.div({
-    id: "app"
+    id: "app",
+    style: {
+      position: "fixed",
+      top: 0,
+      bottom: 0,
+      right: 0,
+      left: 0
+    }
   }, this.View.HTMLElement, this.Menu.HTMLElement);
   $tasks.init();
   $url.init();

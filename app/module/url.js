@@ -1,20 +1,25 @@
-/* global $ez, $state, $history */
+/* global $ez, $state, $history, $loop */
 
 var _ = {
   story: '',
   data: {},
   team: '',
   chapter: '',
-  view: '',
-  page: ''
+  page: '',
 };
 
+_view = {};
+_path = '/';
+
 // website/read/all-you-need-is-kill/team/MTO/chapter/5/page/2
+
+var _urlTask = $loop.get("urlChange").sub(function () {
+  $history.add(null, "yoyo", _path);
+});
 
 function change(key, value) {
   if (_[key] !== value && _[key] !== undefined) {
     _[key] = value;
-    $state.requestURLUpdate();
     return true;
   }
   return false;
@@ -23,28 +28,36 @@ function change(key, value) {
 var $url = {
   init: function () {
     var args = window.location.pathname.split('/').filter($ez.removeEmpty);
-    var i = 2, arg, val, route = _routes[args[0]];
+    var i = 2, key, view = _routes[args[0]];
 
-    if (!route || route.__set__(args[1]) === false) {
+    if (!view || view.__set__(args[1]) === false) {
       $history.goHome();
       return _;
     }
 
+    _view = view;
     while (i < args.length) {
-      arg = route[args[i]];
-      if (typeof arg !== "function") {
+      key = args[i++];
+      if (typeof view[key] !== "function") {
         break;
       }
-      route[args[i]] = arg.bind({val: args[i + 1]});
-      i += 2;
+      _[key] = args[i++];
     }
-    route.__apply__();
+    view.__apply__();
     return _;
   },
+
   set: function (updatedKeys) {
-    Object.keys(updatedKeys).forEach(function (key) {
-      change(key, updatedKeys[key]);
-    });
+    var i = -1, key, hasChanged = false;
+    while (++i < updatedKeys.length) {
+      key = updatedKeys[i];
+      if (change(key, updatedKeys[key])) {
+        hasChanged = true;
+      }
+    }
+    if (hasChanged) {
+      _view.__apply__();
+    }
   }
 };
 
@@ -64,32 +77,30 @@ var _routes = {
       _.story = val;
     },
     __apply__: function () {
-      var path = "/story/" + _.story + '/';
+      _path = "/story/" + _.story + '/';
       Object.keys(_routes.story).forEach(function (key) {
         if (/^__(.+)__$/.test(key)) { return; }
-        var val;
-        val = _routes.story[key]();
-        _[key] = val;
-        path += key +'/'+ val +'/';
+        _[key] = _routes.story[key](_[key]);
+        _path += key +'/'+ _[key] +'/';
       });
-      $history.set(null, "getTitle()", path);
+      _urlTask.request();
     },
-    team: function () {
+    team: function (val) {
       return "MTO";
     },
-    chapter: function () {
-      this.val = validateInt(this.val);
-      if (this.val === false) {
-        this.val = "last";
+    chapter: function (val) {
+      val = validateInt(val);
+      if (val === false) {
+        val = "last";
       }
-      return this.val;
+      return val;
     },
-    page: function () {
-      this.val = validateInt(this.val);
-      if (this.val === false) {
-        this.val = 0;
+    page: function (val) {
+      val = validateInt(val);
+      if (val === false) {
+        val = 0;
       }
-      return this.val;
+      return val;
     },
   }
 }

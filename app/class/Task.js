@@ -8,15 +8,30 @@ function Task() {
   this.execCount = 0;
   this.fnArray = [];
   this.priority = 0;
+  this.executeOnce = true;
+}
+
+Task.prototype.repeat = function () {
+  this.executeOnce = false;
+}
+
+Task.prototype.norepeat = function () {
+  this.executeOnce = true;
 }
 
 Task.prototype.exec = function() {
   var i = -1;
   if (this.enabled) {
+    console.log("task id", this.id, "enabled");
     while (++i < this.fnArray.length) {
-      this.fnArray[i].apply(this, arguments);
+      if (this.fnArray[i].apply(this, arguments) === false) {
+        break;
+      }
     }
     this.execCount++;
+  }
+  if (this.executeOnce) {
+    this.enabled = false;
   }
   return this;
 };

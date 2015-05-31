@@ -17,12 +17,14 @@ var _style = {
     margin: "15rem auto"
   },
   menu: {
-    position: "fixed",
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    transform: "translate(0, 0)",
+    position: "absolute",
+    display: "none",
     top: 0,
-    left: 0,
     bottom: 0,
     right: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    left: 0
   }
 };
 
@@ -78,4 +80,17 @@ function Menu() {
   });
   this.HTMLElement = $new.div({id: "menu", style: _style.menu}, this.config.HTMLElement);
 }
+
+Menu.prototype.show = function () {
+  this.HTMLElement.style.display = '';
+};
+
+Menu.prototype.hide = function () {
+  this.HTMLElement.style.display = 'none';
+};
+
+
+Menu.prototype.update = function () {
+};
+
 

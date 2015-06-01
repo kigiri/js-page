@@ -13,16 +13,17 @@ function Task() {
 
 Task.prototype.repeat = function () {
   this.executeOnce = false;
+  return this;
 }
 
 Task.prototype.norepeat = function () {
   this.executeOnce = true;
+  return this;
 }
 
 Task.prototype.exec = function() {
   var i = -1;
   if (this.enabled) {
-    console.log("task id", this.id, "enabled");
     while (++i < this.fnArray.length) {
       if (this.fnArray[i].apply(this, arguments) === false) {
         break;

@@ -7,15 +7,14 @@ function DownloadManager(element, range) {
 
 DownloadManager.prototype.load = function (element) {
   this.lastRequestedId = element.index;
-  if (element.isComplete) { return this; }
   if (element.index === this.current.index) { return this.start(); }
-  this.current.cancel();
+  this.stop();
   this.current = element;
   this.start();
 };
 
 DownloadManager.prototype.stop = function () {
-  this.current.cancel();
+  try { this.current.cancel(); } catch (e) {}
 };
 
 DownloadManager.prototype.start = function () {
@@ -27,8 +26,6 @@ DownloadManager.prototype.start = function () {
     this.current = next;
   }
 
-  requestAnimationFrame(function () {
-    this.current.load().then(this.start.bind(this));
-  }.bind(this));
+  this.current.load().then(this.start.bind(this));
   return this;
 };

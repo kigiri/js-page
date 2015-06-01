@@ -16,22 +16,44 @@ function getTeamChapters(storypath, teampath) {
     const joinedPath = $path.join(dirpath, chapterpath);
     return $readDir(joinedPath).map((filename, index) => {
       return $sizeOf($path.join(joinedPath, filename)).then(d => ({
-        index,
         path: filename,
         height: d.height,
         width: d.width
       }));
     }).then(pages => {
-      let p, i = -1, isOdd = false;
+      let p, i = -1, fillerInsert = [], nextFiller = 0, space = 0, count = 0;
 
       while (++i < pages.length) {
         p = pages[i];
+        space++;
+        count++;
         if (p.width > p.height) {
-          isOdd = (p.index % 2 !== 0);
-          break;
+          count++;
+          if (space % 2 === 0) {
+            fillerInsert.push(nextFiller);
+          }
+          space = 0;
+          nextFiller = i + 1;
         }
       }
-      return { isOdd, path: chapterpath, pages };
+
+      fillerInsert.forEach(idx => {
+        pages.splice(idx, 0, {path: "filler", height: 0, width: 0});
+      });
+
+      count += fillerInsert.length;
+      if (count % 2) {
+        if (nextFiller) {
+          console.log("adding to the end of:", chapterpath);
+          pages.push({path: "filler", height: 0, width: 0})
+        } else {
+          console.log("unsafe filler in the start of:", chapterpath);
+          pages.unshift({path: "filler", height: 0, width: 0})
+        }
+      }
+
+      pages.forEach((p, i) => p.index = i);
+      return { path: chapterpath, pages };
     });
   })
   .then(chapterArray => {
@@ -77,6 +99,7 @@ openStory({
   path: _.deburr(_.kebabCase("All You Need Is Kill")), // String
   type: "manga", // StoryType ["manga", "manhua", "manwa", "manfra", "comic", "graphicnovel", "lightnovel"]
   ongoing: false, // Boolean
+  rightToLeft: false,
   description: "",
   genre: [
     "Action",

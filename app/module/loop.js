@@ -65,3 +65,19 @@ var $loop = {
     _taskArray = _taskArray.filter($ez.none("id", id));
   }
 };
+
+
+[
+/* 0 */ "backgroundChange",
+/* 1 */ "nextPage",
+/* 2 */ "previousPage",
+/* 3 */ "translate",
+/* 4 */ "urlChange",
+/* 5 */ "storyLoad",
+/* 6 */ "resize",
+/* 7 */ "downloadUpdate",
+/* 8 */ "drag",
+].forEach(function (key, priority) {
+  $loop.get(key).setPriority(priority);
+});
+

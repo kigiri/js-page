@@ -1,5 +1,4 @@
-/* global Average, ImageLoader, $new, $state, $config, $add, $mousedown */
-
+/* global Average, ImageLoader, $new, $state, $config, $add, $mousedown, $url, $format, $loop */
 var _style = {
   page: {
     position: "relative",
@@ -7,6 +6,15 @@ var _style = {
     backgroundSize: "contain",
     backgroundRepeat: "no-repeat",
     backgroundPosition: "center"
+  },
+  filler: {
+    position: "relative",
+    overflow: "hidden",
+    backgroundSize: "contain",
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "center",
+    width: "100%",
+    height: "100%"
   },
 
   percentage: {
@@ -115,6 +123,7 @@ function generatePageLoader(page) {
     loadRate = event.loaded / event.total;
     page.estimatedEnd = now + ((((1 / loadRate - loadRate) * page.elapsedTime)
       + ((event.total - event.loaded) * page.lastByteRate.get())) / 2);
+    $loop.downloadUpdate.request();
   })
   .then(function (objectURL) {
     page.HTMLElement.style.backgroundImage = 'url("'+ objectURL +'")';
@@ -128,22 +137,38 @@ function generatePageLoader(page) {
 
 function Page(chapter, pageInfo) {
   this.index = pageInfo.index;
-  this.url = chapter.path +'/'+ pageInfo.path;
-  this.width = pageInfo.width;
-  this.height = pageInfo.height;
-  this.isWide = (pageInfo.width > pageInfo.height);
   this.chapter = chapter;
   this.isLoading = false;
-  this.isComplete = false;
-  this.initRequestData();
-  this.progress = new Progress();
-  this.HTMLElement = $new.div({
-    id: "page-"+ this.index,
-    className: "page",
-    style: _style.page,
-    onmousedown: $watchers.mouseDown,
-    onclick: $state.handlePageClick
-  }, this.progress.HTMLElement);
+  if (pageInfo.path === "filler") {
+    this.url = 'filler';
+    this.width = 0;
+    this.height = 0;
+    this.isWide = false;
+    this.isComplete = true;
+    this.progress = null;
+    this.HTMLElement = $new.div({
+      id: "page-"+ this.index,
+      className: "page",
+      style: _style.page,
+      onmousedown: $watchers.mouseDown,
+      onclick: $format.click.bind(this),
+    });
+  } else {
+    this.url = chapter.path +'/'+ pageInfo.path;
+    this.width = pageInfo.width;
+    this.height = pageInfo.height;
+    this.isWide = (pageInfo.width > pageInfo.height);
+    this.isComplete = false;
+    this.initRequestData();
+    this.progress = new Progress();
+    this.HTMLElement = $new.div({
+      id: "page-"+ this.index,
+      className: "page",
+      style: _style.page,
+      onmousedown: $watchers.mouseDown,
+      onclick: $format.click.bind(this),
+    }, this.progress.HTMLElement);
+  }
 }
 
 Page.prototype.initRequestData = function () {
@@ -151,6 +176,7 @@ Page.prototype.initRequestData = function () {
   this.loaded = 0;
   this.total = Infinity;
   this.elapsedTime = 0;
+  return this;
 };
 
 Page.prototype.downloadComplete = function () {
@@ -175,7 +201,7 @@ Page.prototype.getDownloadState = function () {
   };
 };
 
-Page.prototype.update = function () {
+Page.prototype.updateDownloadBar = function () {
   if (this.progress !== null) {
     if (this.isLoading) {
       this.progress.update(this.getDownloadState(), this.elapsedTime);
@@ -184,6 +210,12 @@ Page.prototype.update = function () {
       this.progress = null;
     }
   }
+  return this;
+};
+
+Page.prototype.update = function () {
+  $format.resize.call(this, this.HTMLElement.style, this.width, this.height,
+    $state.width, $state.height);
   return this;
 };
 
@@ -214,6 +246,8 @@ Page.prototype.detatch = function () {
 
 Page.prototype.attach = function () {
   if (!this.isAttached) {
+    this.updateDownloadBar();
+    this.update();
     $add(this.HTMLElement, this.chapter.HTMLElement);
     this.isAttached = true;
   }
@@ -221,56 +255,21 @@ Page.prototype.attach = function () {
 };
 
 Page.prototype.isPair = function () {
-  return ((this.index % 2 ? true : false) !== $config.invertPageOrder);
-};
-
-Page.prototype.refresh = function () {
-  var style = this.HTMLElement.style,
-      w = this.width,
-      h = this.height,
-      sW = $state.width,
-      sH = $state.height;
-
-  // strip
-  switch ($config.readingMode) {
-  case "strip":
-    style.height = ($config.fit ? ~~(sW / w * h) : h) +'px';
-    style.width = '100%';
-    style.backgroundPosition = 'center';
-  break;
-  case "single":
-    if ($config.fit) {
-      style.height = sH +'px';
-    } else {
-      style.height = ~~((sW / w) * h) +'px';
-    }
-    style.width = '100%';
-    style.backgroundPosition = 'center';
-  break;
-  case "double":
-    if ($config.fit) {
-      style.height = sH +'px';
-    } else {
-      style.height = ~~(((sW / 2) / w) * h) +'px';
-    }
-    if (this.isPair()) {
-      style.float = 'right';
-      style.backgroundPosition = 'left';
-    } else {
-      style.float = 'left';
-      style.backgroundPosition = 'right';
-    }
-    style.width = '50%';
-  break;
-  default: break;
-  }
+  console.log(this.id, (this.id % 2 ? $config.invertPageOrder : !$config.invertPageOrder), "invertPageOrder", $config.invertPageOrder);
+  return (this.id % 2 ? $config.invertPageOrder : !$config.invertPageOrder);
 };
 
 Page.prototype.previous = function () {
   return this.chapter.getPage(this.index - 1);
 };
 
+Page.prototype.scrollTo = function () {
+  // this.HTMLElement.scor
+};
+
+
 Page.prototype.next = function () {
   return this.chapter.getPage(this.index + 1);
 };
+
 

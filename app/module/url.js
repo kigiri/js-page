@@ -13,7 +13,7 @@ _path = '/';
 
 // website/read/all-you-need-is-kill/team/MTO/chapter/5/page/2
 
-var _urlTask = $loop.get("urlChange").sub(function () {
+var _urlTask = $loop.urlChange.sub(function () {
   $history.add(null, "yoyo", _path);
 });
 
@@ -26,6 +26,15 @@ function change(key, value) {
 }
 
 var $url = {
+  setView: function (key, value) {
+    var view = _routes[key];
+    if (view && view !== _view) {
+      _view = view;
+      view.__set__(value);
+      view.__apply__();
+    }
+    return $url;
+  },
   init: function () {
     var args = window.location.pathname.split('/').filter($ez.removeEmpty);
     var i = 2, key, view = _routes[args[0]];
@@ -47,11 +56,11 @@ var $url = {
     return _;
   },
 
-  set: function (updatedKeys) {
-    var i = -1, key, hasChanged = false;
+  set: function (updateData) {
+    var i = -1, key, hasChanged = false, updatedKeys = Object.keys(updateData);
     while (++i < updatedKeys.length) {
       key = updatedKeys[i];
-      if (change(key, updatedKeys[key])) {
+      if (change(key, updateData[key])) {
         hasChanged = true;
       }
     }
@@ -91,14 +100,14 @@ var _routes = {
     chapter: function (val) {
       val = validateInt(val);
       if (val === false) {
-        val = "last";
+        val = 0; // should try resume where the user last chapter read
       }
       return val;
     },
     page: function (val) {
       val = validateInt(val);
       if (val === false) {
-        val = 0;
+        val = 0; // should try resume where the user last page read
       }
       return val;
     },

@@ -1,19 +1,41 @@
-/* global Chapter, $state, $new, $url */
-
-//
-/* global Chapter, $state, $new, $url, $config */
+/* global Chapter, $state, $new, $url, $config, $add */
 
 function Story(storyInfo) {
-  var firstChap = new Chapter(this, storyInfo.teams[this.team][0]);
-  this.dl = new DownloadManager(firstChap, $config.pageBuffer);
+  console.log('new Story', arguments);
   this.id = storyInfo.path;
-  this.availableTeams = Object.keys(storyInfo.teams);
-  this.HTMLElement = $new.div({
-    id: "story"
-  }, firstChap.HTMLElement, $new.div({style: { clear: "both" }}));
+  this.teamsData = storyInfo.teams;
+  this.availableTeams = Object.keys(this.teamsData);
+  this.team = this.availableTeams[0];
+  this.chapterCache = [];
+  this.HTMLElement = $new.div({ id: "story" });
+  $url.set({story: this.id, team: this.team});
 }
 
-Story.prototype.openPage = function (chapterIndex, pageIndex) {
-  $url.set({story: this.id, chapter: chapterIndex, page: pageIndex});
+Story.prototype.setTeam = function (team) {
+  if (this.availableTeams.indexOf(team) === -1) {
+    this.team = this.team || this.availableTeams[0];
+  } else if (this.team !== team) {
+    this.team = team;
+    this.chapterArray = [];
+    $url.set({team: team});
+    // should change selected chapter page
+  }
+  return this;
+}
+
+var _separator = $new.div({style: { clear: "both" }});
+
+Story.prototype.getChapter = function (chapterIndex) {
+  if (!this.chapterCache[chapterIndex]) {
+    this.chapterCache[chapterIndex] = new Chapter(this,
+      this.teamsData[this.team].chapters, chapterIndex);
+  }
+  return this.chapterCache[chapterIndex];
 };
 
+Story.prototype.setChapter = function (chapterIndex) {
+  this.chapter = this.getChapter(chapterIndex);
+  $add(this.chapter.HTMLElement, this.HTMLElement);
+  $add(_separator, this.HTMLElement);
+  return this;
+};

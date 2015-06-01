@@ -1,4 +1,4 @@
-/* global View, Menu, $new, $state, $url, $loop, $background, $tasks, $i18n, $config */
+/* global View, Menu, $new, $state, $url, $loop, $background, $i18n, $config */
 
 function App() {
   this.View = $state.View = new View();
@@ -13,7 +13,6 @@ function App() {
       left: 0
     }
   }, this.View.HTMLElement, this.Menu.HTMLElement);
-  $tasks.init();
   $url.init();
   $background();
   $loop.start();

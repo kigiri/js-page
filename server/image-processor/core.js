@@ -47,11 +47,11 @@ function getTeamChapters(storypath, teampath) {
         if (nextFiller) {
           console.log("adding to the end of:", chapterpath);
           p = pages[pages.length - 1];
-          pages.unshift({path: "filler", height: p.height, width: p.width})
+          pages.push({path: "filler", height: p.height, width: p.width});
         } else {
           console.log("unsafe filler in the start of:", chapterpath);
           p = pages[0];
-          pages.unshift({path: "filler", height: p.height, width: p.width})
+          pages.unshift({path: "filler", height: p.height, width: p.width});
         }
       }
 

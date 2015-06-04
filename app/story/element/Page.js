@@ -156,6 +156,7 @@ function Page(chapter, pageInfo) {
     this.isWide = false;
     this.isComplete = true;
     this.progress = null;
+    this.HTMLElement.style.backgroundImage = $ez.fill(pageInfo.width, pageInfo.height);
   } else {
     this.url = chapter.path +'/'+ pageInfo.path;
     this.isComplete = false;

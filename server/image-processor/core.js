@@ -38,17 +38,20 @@ function getTeamChapters(storypath, teampath) {
       }
 
       fillerInsert.forEach(idx => {
-        pages.splice(idx, 0, {path: "filler", height: 0, width: 0});
+        p = pages[idx];
+        pages.splice(idx, 0, {path: "filler", height: p.height, width: p.width});
       });
 
       count += fillerInsert.length;
       if (count % 2) {
         if (nextFiller) {
           console.log("adding to the end of:", chapterpath);
-          pages.push({path: "filler", height: 0, width: 0})
+          p = pages[pages.length - 1];
+          pages.unshift({path: "filler", height: p.height, width: p.width})
         } else {
           console.log("unsafe filler in the start of:", chapterpath);
-          pages.unshift({path: "filler", height: 0, width: 0})
+          p = pages[0];
+          pages.unshift({path: "filler", height: p.height, width: p.width})
         }
       }
 

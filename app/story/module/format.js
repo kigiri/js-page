@@ -143,16 +143,14 @@ _double = {
       style.height = ~~((($state.width / 2) / this.width) * this.height) +'px';
     }
     style.width = '50%';
+    style.float = 'right';
     if (this.isWide) {
       style.width = '100%';
-      style.backgroundPosition = 'center';
-      style.float = 'right';
+      style.backgroundPosition = '50% 50%';
     } else if (this.isPair()) {
-      style.float = 'left';
-      style.backgroundPosition = 'right';
+      style.backgroundPosition = '100% 50%';
     } else {
-      style.float = 'right';
-      style.backgroundPosition = 'left';
+      style.backgroundPosition = '-1px 50%';
     }
     this.chapter.story.HTMLElement.style.height = this.HTMLElement.style.height;
   },

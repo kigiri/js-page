@@ -5,29 +5,28 @@ var _task,
     _previousY = 0,
     _dragStart = null;
 
-
-function reach(positionModifier, diff) {
-  var newScroll = $state.scrollTop + positionModifier;
+function reach(yMod, xMod, diff) {
+  var newScroll = $state.scrollTop + yMod;
   if (newScroll < 0) {
     window.scrollTo(0, 0);
     if (diff) {
-      $state.View.drag(0, newScroll / diff);
+      $state.Story.drag(0, newScroll / diff);
     }
   } else if ($state.maxScroll < newScroll) {
     window.scrollTo(0, $state.maxScroll);
     if (diff) {
-      $state.View.drag(0, (newScroll - $state.maxScroll) / diff)
+      $state.Story.drag(0, (newScroll - $state.maxScroll) / diff)
     }
   } else {
     window.scrollTo(0, newScroll);
   }
-  _inertia = positionModifier;
+  _inertia = yMod;
 }
 
 var $drag = {
   stop: function () {
    _dragStart = false;
-   $state.View.release();
+   $loop.stopDrag.request();
   },
   freeze: function () {
     _dragStart = false;
@@ -35,14 +34,13 @@ var $drag = {
   }
 };
 
-function canDrag() { return $state.View.type === "story"; }
 
 $drag.start = function () {
-  if (!canDrag()) { return; }
-  _task = $loop.drag.sub(function (e) {
+  _task = $loop.drag.repeat().sub(function (e) {
     if (_dragStart) {
-      reach(_previousY - $state.y, e.diff);
+      reach(_previousY - $state.y, _previousX - $state.x, e.diff);
       _previousY = $state.y;
+      _previousX = $state.x;
     } else if (_inertia) {
       if (_inertia > 0) {
         reach(Math.max(0, _inertia - e.diff / 10));
@@ -52,10 +50,9 @@ $drag.start = function () {
     }
   }).repeat().request();
   $drag.start = function () {
-    if (canDrag()) {
-      _previousY = $state.y;
-      _dragStart = true;
-    }
+    _previousX = $state.x;
+    _previousY = $state.y;
+    _dragStart = true;
   };
   $drag.start();
 };

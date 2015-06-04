@@ -27,7 +27,7 @@ function tryMinify(jsCode) {
   var ret;
   try {
     return maxify(jsCode);
-    ret = minify(jsCode, uglifyConfig);
+    // ret = minify(jsCode, uglifyConfig);
     return ret.code;
   } catch (err) {
     console.error( err.message +'\n'
@@ -45,7 +45,7 @@ function parseFile(path) {
   };
 }
 
-function dependency(path) {
+function dependency(path, dir) {
   var name = formatName(path),
       fileInfo = parseFile(path);
 
@@ -58,7 +58,7 @@ function dependency(path) {
       +'})('+ g.map(formatArg).join(', ') +');\n';
   }
 
-  _dep[name] = {
+  _dep[dir][name] = {
     name: name,
     path: path.slice(APP_DIR.length, -3),
     score: 0,
@@ -68,24 +68,27 @@ function dependency(path) {
 
   fs.watchFile(path, function () {
     var fileInfo = parseFile(path);
-    _dep[name].globals = fileInfo.globals;
-    _dep[name].code = generate(fileInfo);
+    _dep[dir][name].globals = fileInfo.globals;
+    _dep[dir][name].code = generate(fileInfo);
     updateCallback();
   });
 }
 
-function watchFolder(dirname) {
-  fs.readdirSync(dirname).forEach(function (file) {
+function watchFolder(dirname, rootdir) {
+  fs.readdirSync(dirname).forEach(file => {
     var filename = dirname +'/'+ file;
     if (fs.statSync(filename).isDirectory()) {
-      watchFolder(filename);
+      watchFolder(filename, rootdir);
     } else if (/\.js$/.test(file)) {
-      dependency(filename);
+      dependency(filename, rootdir);
     }
   });
 }
 
-watchFolder(APP_DIR);
+fs.readdirSync(APP_DIR).forEach(dir => {
+  _dep[dir] = {};
+  watchFolder(APP_DIR +'/'+ dir, dir);
+});
 
 function getIndex(name, nameArray, start) {
   var i = start;
@@ -126,7 +129,12 @@ module.exports = {
     updateCallback = cb;
   },
   compile: () => {
-    var tmp = Object.keys(_dep).map(key => _dep[key]).filter(d => !!d.code);
-    return 'var __ = {};\n'+ solveDependencies(tmp).map(d => d.code).join('\n');
+    var build = {};
+    Object.keys(_dep).forEach(dir => {
+      build[dir] = solveDependencies(Object.keys(_dep[dir])
+        .map(key => _dep[dir][key])
+        .filter(d => (d && d.code))).map(d => d.code).join('\n');
+    });
+    return build;
   }
 };

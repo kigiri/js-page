@@ -11,14 +11,14 @@ function sizeOf(bytes) {
 }
 
 function renderCss() {
-  return fs.readFileSync(APP_DIR +'/app/style/main.css');
+  return fs.readFileSync(APP_DIR +'/app/core/main.css');
 }
 
 function renderJs() {
   return jsBuilder.compile();
 }
 
-function buildPage() {
+function buildCore(jsCode) {
   var htmlText = [
     '<!DOCTYPE html><html><head>',
     '<title>'+ title +'</title>',
@@ -28,10 +28,10 @@ function buildPage() {
     '<style type="text/css">',
     renderCss(),
     '</style>',
-    '</head><body><div id="size" style="visibility:hidden; position: fixed; right: 0; bottom: 0"></div>',
+    '</head><body><div id="size" style="visibility:hidden; position:fixed; right:0; bottom:0"></div>',
     '<script type="text/javascript">',
-    renderJs(),
-    '/* __$$__ */',
+    'var __ = {};',
+    jsCode,
     '</script>',
     '</body></html>'
   ].join('\n');
@@ -45,7 +45,14 @@ function buildPage() {
       : sizeOf(14000 - size) +" left under 14 kb, great job."),
     "("+ compression +" compression rate)");
   fs.writeFileAsync(APP_DIR +'/public/index.html', htmlText);
-  fs.writeFileAsync(APP_DIR +'/public/story/index.html', htmlText);
+}
+
+function buildPage() {
+  var js = renderJs();
+  buildCore(js.core);
+  Object.keys(js).filter(key => key !== "core").forEach(key => {
+    fs.writeFileAsync(APP_DIR +'/public/'+ key +'.js', js[key]);
+  });
 }
 
 jsBuilder.setCallback(buildPage);

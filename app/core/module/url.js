@@ -14,7 +14,7 @@ _path = '/';
 // website/read/all-you-need-is-kill/team/MTO/chapter/5/page/2
 
 var _urlTask = $loop.urlChange.sub(function () {
-  $history.add(null, "yoyo", _path);
+  $history.add(null, "yoyo", window.location.origin + '/#'+ _path);
 });
 
 function change(key, value) {
@@ -28,6 +28,7 @@ function change(key, value) {
 var $url = {
   setView: function (key, value) {
     var view = _routes[key];
+    console.log(view, key);
     if (view && view !== _view) {
       _view = view;
       view.__set__(value);
@@ -36,7 +37,7 @@ var $url = {
     return $url;
   },
   init: function () {
-    var args = window.location.pathname.split('/').filter($ez.removeEmpty);
+    var args = window.location.hash.split('/').filter($ez.removeEmpty);
     var i = 2, key, view = _routes[args[0]];
 
     if (!view || view.__set__(args[1]) === false) {

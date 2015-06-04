@@ -1,15 +1,9 @@
 /* global Page, $new, $url, $state, $format */
 
-function Chapter(story, chapterArray, index) {
-  console.log(story, chapterArray, index);
-  var chapterInfo = chapterArray[index], i = -1, id, page;
-  if (!chapterInfo) {
-    chapterInfo = chapterArray[0];
-    index = 0;
-  }
-  $url.set({chapter: index});
+function Chapter(story, chapterInfo) {
+  console.log("new Chapter(", chapterInfo, ")");
+  var i = -1, id, page;
   this.story = story;
-  this.chapterArray = chapterArray;
   this.index = chapterInfo.index;
   this.id = chapterInfo.path;
   this.path = '/assets/'+ story.id +'/'+ story.team +'/'+ chapterInfo.path;
@@ -21,7 +15,8 @@ function Chapter(story, chapterArray, index) {
   }.bind(this));
 
   id = 0;
-  while (++i < this.pageArray.length) {
+  this.pageCount = this.pageArray.length;
+  while (++i < this.pageCount) {
     page = this.pageArray[i];
     page.id = id;
     id += page.isWide ? 2 : 1;
@@ -43,11 +38,16 @@ function Chapter(story, chapterArray, index) {
 }
 
 Chapter.prototype.getPage = function (idx) {
+  var toLoad;
   if (idx < 0) {
-    return this.pageArray[0]; // should load previous chapter
+    toLoad = this.previous();
+    if (toLoad === null) { return null; }
+    return toLoad.getPage(toLoad.pageCount + idx);
   }
   if (idx >= this.pageCount) {
-    return this.pageArray[this.pageCount-1]; // should load next chapter
+    toLoad = this.next();
+    if (toLoad === null) { return null; }
+    return toLoad.getPage(idx - this.pageCount);
   }
   return this.pageArray[idx];
 };
@@ -71,18 +71,14 @@ Chapter.prototype.eachPage = function (fn) {
 };
 
 Chapter.prototype.previous = function () {
-  return this.chapterArray[Math.max(this.index - 1, 0)];
+  return this.story.getChapter(this.index - 1);
 };
 
 Chapter.prototype.next = function () {
-  if (this.index + 1 < this.chapterArray.length) {
-    return this.chapterArray[this.index + 1];
-  }
-  return this;
+  return this.story.getChapter(this.index + 1);
 };
 
 Chapter.prototype.setPage = function (pageIndex) {
-  $state.page = this.getPage(pageIndex);
-  $format.load();
+  $format.load(this.getPage(pageIndex));
   return this;
 };

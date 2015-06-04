@@ -1,9 +1,9 @@
-var root = this, skip = function () {};
+function skip() {};
 
 function Promise(thisArg) {
   this.tasks = [];
   this.catchCallback = skip;
-  this.thisArg = thisArg || root;
+  this.thisArg = thisArg || this;
 }
 
 Promise.prototype.resolve = function () {

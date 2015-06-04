@@ -1,32 +1,28 @@
-/* global $state, $drag, $loop */
-
+/* global $state, $drag, $loop, $format */
 // Watch DOM events, update $state and if needed triggers tasks.
 
 $watchers = {};
 
-var _sizeDiv = document.getElementById('size');
 function updateWindow() {
-  if ($state.height !== _sizeDiv.offsetTop) {
-    $state.height = _sizeDiv.offsetTop;
-    $loop.resize.request();
-  }
-
-  if ($state.width !== _sizeDiv.offsetLeft) {
-    $state.width = _sizeDiv.offsetLeft;
-    $loop.resize.request();
-  }
-  var offsetHeight;
-  try {
-    offsetHeight = $state.View.content.HTMLElement.offsetHeight;
-  } catch (err) {
-    offsetHeight = 0;
-  }
-  var newMaxScroll = Math.max(offsetHeight - $state.height, 0);
-  if ($state.maxScroll !== newMaxScroll) {
-    $state.maxScroll = newMaxScroll;
-    $loop.resize.request();
-  }
+  var size = document.getElementById('size');
+  $state.height = size.offsetTop;
+  $state.width = size.offsetLeft;
+  $loop.resize.request();
   _previousCall = null;
+  updateWindow = function () {
+    var scroll;
+    if ($state.height !== size.offsetTop) {
+      $state.height = size.offsetTop;
+      $loop.resize.request();
+    }
+
+    if ($state.width !== size.offsetLeft) {
+      $state.width = size.offsetLeft;
+      $loop.resize.request();
+    }
+    _previousCall = null;
+    updateScroll();
+  }
 }
 
 var _previousCall = null;
@@ -36,14 +32,18 @@ function callUpdate() {
   }
 }
 
+function updateScroll() {
+  var v = $state.View;
+  if (!v || !v.content) { return; }
+  var scroll = Math.max(v.content.HTMLElement.offsetHeight - $state.height, 0);
+  if ($state.maxScroll !== scroll) {
+    $state.maxScroll = scroll;
+    $loop.updateScroll.request();
+  }
+}
+
 callUpdate();
-$watchers.mouseDown = function (event) {
-  callUpdate();
-  $state.x = event.clientX;
-  $state.y = event.clientY;
-  $drag.start();
-  return false;
-};
+$watchers.callUpdate = callUpdate;
 
 window.onscroll = function (event) {
   window.onscroll = (event.pageY !== undefined)
@@ -63,6 +63,7 @@ window.onmousemove = function (event) {
 
 window.addEventListener("orientationchange", callUpdate, false);
 window.addEventListener("resize", callUpdate, false);
+
 // window.addEventListener("touchstart", touchStart, false);
 // window.addEventListener("touchend", touchEnd, false);
 // window.addEventListener("touchleave", touchEnd, false);

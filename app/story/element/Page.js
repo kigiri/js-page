@@ -1,12 +1,15 @@
-/* global Average, ImageLoader, $new, $state, $config, $add, $mousedown, $url, $format, $loop */
+/* global Average, ImageLoader, $new, $state, $config, $add, $url, $format, $loop, $watchers, $drag */
+
 var _style = {
   page: {
     position: "relative",
     overflow: "hidden",
     backgroundSize: "contain",
     backgroundRepeat: "no-repeat",
-    backgroundPosition: "center"
+    backgroundPosition: "center",
+    transitionTimingFunction: 'ease-out',
   },
+
   filler: {
     position: "relative",
     overflow: "hidden",
@@ -52,14 +55,14 @@ var _style = {
     background: 'black',
     opacity: 1,
     transitionProperty: 'opacity',
-    transitionDuration: '500ms',
+    transitionDuration: '100ms',
     transitionTimingFunction: 'cubic-bezier(0.75, 0, 0.5, 0.5)'
   },
 
   bar: {
     height: "100%",
     margin: "auto",
-    background: "hsl(0, 0%, 0%)",
+    background: "hsl(0, 0%, 30%)",
     outline: "0.2rem solid rgba(255, 255, 255, 0.2)",
     outlineOffset: "-0.1rem",
     transform: "translateY(0%)",
@@ -70,6 +73,7 @@ var _style = {
 };
 
 function Progress() {
+  this.isAttached = false;
   this.percentage = $new.div({ style: _style.percentage });
   this.details = $new.div({ style: _style.details });
   this.bar = $new.div({ style: _style.bar },
@@ -103,7 +107,7 @@ Progress.prototype.update = function (dlState, elapsedTime) {
     }
   }
   this.bar.style.transform = 'translateY(-'+ dlState.loadRate +'%)';
-  this.bar.style.background = 'hsl(0, 0%, '+ dlState.loadRate +'%)';
+  this.bar.style.background = 'hsl(0, 0%, '+ Math.max(dlState.loadRate, 30) +'%)';
 };
 
 function generatePageLoader(page) {
@@ -123,7 +127,6 @@ function generatePageLoader(page) {
     loadRate = event.loaded / event.total;
     page.estimatedEnd = now + ((((1 / loadRate - loadRate) * page.elapsedTime)
       + ((event.total - event.loaded) * page.lastByteRate.get())) / 2);
-    $loop.downloadUpdate.request();
   })
   .then(function (objectURL) {
     page.HTMLElement.style.backgroundImage = 'url("'+ objectURL +'")';
@@ -139,35 +142,26 @@ function Page(chapter, pageInfo) {
   this.index = pageInfo.index;
   this.chapter = chapter;
   this.isLoading = false;
+  this.width = pageInfo.width;
+  this.height = pageInfo.height;
+  this.isWide = (pageInfo.width > pageInfo.height);
+  this.HTMLElement = $new.div({
+    id: "page-"+ this.index,
+    className: "page",
+    style: _style.page,
+    onmousedown: mouseDown.bind(this),
+    onmouseup: mouseUp.bind(this),
+  });
   if (pageInfo.path === "filler") {
     this.url = 'filler';
-    this.width = 0;
-    this.height = 0;
     this.isWide = false;
     this.isComplete = true;
     this.progress = null;
-    this.HTMLElement = $new.div({
-      id: "page-"+ this.index,
-      className: "page",
-      style: _style.page,
-      onmousedown: $watchers.mouseDown,
-      onclick: $format.click.bind(this),
-    });
   } else {
     this.url = chapter.path +'/'+ pageInfo.path;
-    this.width = pageInfo.width;
-    this.height = pageInfo.height;
-    this.isWide = (pageInfo.width > pageInfo.height);
     this.isComplete = false;
     this.initRequestData();
     this.progress = new Progress();
-    this.HTMLElement = $new.div({
-      id: "page-"+ this.index,
-      className: "page",
-      style: _style.page,
-      onmousedown: $watchers.mouseDown,
-      onclick: $format.click.bind(this),
-    }, this.progress.HTMLElement);
   }
 }
 
@@ -214,8 +208,8 @@ Page.prototype.updateDownloadBar = function () {
 };
 
 Page.prototype.update = function () {
-  $format.resize.call(this, this.HTMLElement.style, this.width, this.height,
-    $state.width, $state.height);
+  this.updateDownloadBar();
+  $format.resize.call(this);
   return this;
 };
 
@@ -238,7 +232,7 @@ Page.prototype.then = function (callback) {
 
 Page.prototype.detatch = function () {
   if (this.isAttached) {
-    this.HTMLElement.remove();
+    $state.pagesToCleanup.push(this);
     this.isAttached = false;
   }
   return this;
@@ -248,14 +242,18 @@ Page.prototype.attach = function () {
   if (!this.isAttached) {
     this.updateDownloadBar();
     this.update();
-    $add(this.HTMLElement, this.chapter.HTMLElement);
+    if (!this.isComplete && !this.progress.isAttached) {
+      this.HTMLElement.appendChild(this.progress.HTMLElement);
+      this.progress.isAttached = true;
+    }
+    this.chapter.HTMLElement.appendChild(this.HTMLElement);
     this.isAttached = true;
   }
+  $loop.newPage.request(2);
   return this; 
 };
 
 Page.prototype.isPair = function () {
-  console.log(this.id, (this.id % 2 ? $config.invertPageOrder : !$config.invertPageOrder), "invertPageOrder", $config.invertPageOrder);
   return (this.id % 2 ? $config.invertPageOrder : !$config.invertPageOrder);
 };
 
@@ -267,9 +265,37 @@ Page.prototype.scrollTo = function () {
   // this.HTMLElement.scor
 };
 
-
 Page.prototype.next = function () {
   return this.chapter.getPage(this.index + 1);
 };
 
+// Handle user actions
+function mouseUp(event) {
+  this.HTMLElement.removeEventListener("mousemove", this.mouseWatcher);
+  $drag.stop();
+  if (this.distance < 20) {
+    $format.click(event);
+  }
+};
 
+function mouseDown(event) {
+  $watchers.callUpdate();
+  var x = $state.x = event.clientX;
+  var y = $state.y = event.clientY;
+  this.mouseWatcher = function (event) {
+    this.distance = (Math.abs(x - event.x) + Math.abs(y - event.y)) / 2;
+  }.bind(this);
+  this.HTMLElement.addEventListener("mousemove", this.mouseWatcher);
+  $drag.start();
+  return false;
+};
+
+$loop.newPage.sub(function () {
+  var i = -1;
+  while (++i < $state.pagesToCleanup.length) {
+    if (!$state.pagesToCleanup[i].isAttached) {
+      $state.pagesToCleanup[i].HTMLElement.remove();
+    }
+  }
+  $state.pagesToCleanup.length = 0;
+});

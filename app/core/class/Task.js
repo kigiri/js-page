@@ -2,17 +2,24 @@
 
 _id = new Id();
 
-function Task() {
+function Task(name) {
   this.id = _id.new();
   this.enabled = true;
-  this.execCount = 0;
+  this.name = name;
+  this.execCountDown = 0;
   this.fnArray = [];
   this.priority = 0;
   this.executeOnce = true;
+  this.purge = false;
 }
 
 Task.prototype.repeat = function () {
   this.executeOnce = false;
+  return this;
+}
+
+Task.prototype.delete = function () {
+  this.purge = true;
   return this;
 }
 
@@ -22,14 +29,18 @@ Task.prototype.norepeat = function () {
 }
 
 Task.prototype.exec = function() {
+  if (this.execCountDown > 0) {
+    this.execCountDown--;
+    return this;
+  }
   var i = -1;
   if (this.enabled) {
+    // console.log('task', this.id, this.name);
     while (++i < this.fnArray.length) {
       if (this.fnArray[i].apply(this, arguments) === false) {
         break;
       }
     }
-    this.execCount++;
   }
   if (this.executeOnce) {
     this.enabled = false;
@@ -66,7 +77,10 @@ Task.prototype.cancel = function () {
   return this;
 };
 
-Task.prototype.request = function () {
+Task.prototype.request = function (count) {
+  if (typeof count === "number") {
+    this.execCountDown = count;
+  }
   this.enabled = true;
   return this;
 };

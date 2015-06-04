@@ -18,13 +18,22 @@ var updateEvent = (function () {
 });
 
 function loop() {
-  var i = -1, elapsed;
+  var i = -1, elapsed, cleanup = [];
 
   updateEvent();
   while (++i < _taskArray.length) {
-    _taskArray[i].exec(_event);
+    if (_taskArray[i].exec(_event).purge === true) {
+      cleanup.push(i);
+    }
     if ($ez.now() - _event.timestamp > 9) {
       break;
+    }
+  }
+
+  if (cleanup.length) {
+    i = cleanup.length;
+    while (--i >= 0) {
+      _taskArray.splice(cleanup[i], 1);
     }
   }
 
@@ -55,7 +64,7 @@ var $loop = {
       _taskArray.push(t);
       return t;
     } else if (!$loop.hasOwnProperty(key)) { // creating referenced task
-      t = new Task();
+      t = new Task(key);
       _taskArray.push(t);
       $loop[key] = t;
     } // return referenced task
@@ -63,21 +72,25 @@ var $loop = {
   },
   del: function (id) {
     _taskArray = _taskArray.filter($ez.none("id", id));
+  },
+  clear: function () {
+    _taskArray = [];
   }
 };
 
-
 [
-/* 0 */ "backgroundChange",
-/* 1 */ "nextPage",
-/* 2 */ "previousPage",
-/* 3 */ "translate",
-/* 4 */ "urlChange",
-/* 5 */ "storyLoad",
-/* 6 */ "resize",
-/* 7 */ "downloadUpdate",
-/* 8 */ "drag",
+  "loop",
+  "newPage",
+  "backgroundChange",
+  "translate",
+  "urlChange",
+  "storyLoad",
+  "resize",
+  "updateScroll",
+  "drag",
+  "stopDrag",
 ].forEach(function (key, priority) {
   $loop.get(key).setPriority(priority);
 });
 
+$loop.loop.repeat().request();

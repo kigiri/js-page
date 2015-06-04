@@ -1,15 +1,6 @@
 /* global Average, ImageLoader, $new, $state, $config, $add, $url, $format, $loop, $watchers, $drag, $ez */
 
 var _style = {
-  page: {
-    position: "relative",
-    overflow: "hidden",
-    backgroundSize: "contain",
-    backgroundRepeat: "no-repeat",
-    backgroundPosition: "center",
-    transitionTimingFunction: 'ease-out',
-  },
-
   filler: {
     position: "relative",
     overflow: "hidden",
@@ -148,7 +139,7 @@ function Page(chapter, pageInfo) {
   this.HTMLElement = $new.div({
     id: "page-"+ this.index,
     className: "page",
-    style: _style.page,
+    style: $format.getStyle.call(this),
     onmousedown: mouseDown.bind(this),
   });
   if (pageInfo.path === "filler") {

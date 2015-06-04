@@ -6,11 +6,21 @@ function handlePageLoad(page) {
 }
 
 var _readingModes = {};
+function getSharedStyle() {
+  return {
+    position: "relative",
+    overflow: "hidden",
+    backgroundSize: "contain",
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "50% 50%",
+  };
+}
 
 var
 _strip = {
-  style: {
-
+  getStyle: function () {
+    var s = getSharedStyle();
+    return s;
   },
   load: function (page) {
     if (page === null) { return; }
@@ -38,11 +48,19 @@ _strip = {
     +'px';
 
     this.HTMLElement.style.width = '100%';
-    this.HTMLElement.style.backgroundPosition = 'center';
+    this.HTMLElement.style.backgroundPosition = '50% 50%';
     this.chapter.story.HTMLElement.style.height = '100%';
   },
 },
 _single = {
+  getStyle: function () {
+    var s = getSharedStyle();
+    if (this.isWide) {
+      s.backgroundSize = 'cover';
+      s.backgroundPosition = ($config.invertPageOrder) ? '100% 50%' : '0% 50%';
+    }
+    return s;
+  },
   load: function (page) {
     if (page === null) { return; }
     $state.page = page;
@@ -53,14 +71,46 @@ _single = {
     handlePageLoad(page);
   },
   next: function () {
-    var page = $state.page.next();
+    var page = $state.page;
+
+    if (page.isWide) {
+      if ($config.invertPageOrder) {
+        if (page.HTMLElement.style.backgroundPosition === '100% 50%') {
+          page.HTMLElement.style.backgroundPosition = '0% 50%';
+          return;
+        }
+      } else {
+        if (page.HTMLElement.style.backgroundPosition === '0% 50%') {
+          page.HTMLElement.style.backgroundPosition = '100% 50%';
+          return;
+        }
+      }
+    }
+
+    page = page.next();
     while (page && page.url === "filler") {
       page = page.next();
     }
     _single.load(page);
   },
   previous: function () {
-    var page = $state.page.previous();
+    var page = $state.page;
+
+    if (page.isWide) {
+      if ($config.invertPageOrder) {
+        if (page.HTMLElement.style.backgroundPosition === '0% 50%') {
+          page.HTMLElement.style.backgroundPosition = '100% 50%';
+          return;
+        }
+      } else {
+        if (page.HTMLElement.style.backgroundPosition === '100% 50%') {
+          page.HTMLElement.style.backgroundPosition = '0% 50%';
+          return;
+        }
+      }
+    }
+
+    page = page.previous();
     while (page && page.url === "filler") {
       page = page.previous();
     }
@@ -85,11 +135,22 @@ _single = {
       style.height = ~~(($state.width / this.width) * this.height) +'px';
     }
     style.width = '100%';
-    style.backgroundPosition = 'center';
+    if (this.isWide) {
+      if (style.backgroundPosition !== '0% 50%'
+        && style.backgroundPosition !== '100% 50%') {
+        style.backgroundPosition = $config.invertPageOrder ? '100% 50%' : '0% 50%';
+      }
+    } else {
+      style.backgroundPosition = '50% 50%';
+    }
     this.chapter.story.HTMLElement.style.height = this.HTMLElement.style.height;
   }
 },
 _double = {
+  getStyle: function () {
+    var s = getSharedStyle();
+    return s;
+  },
   load: function (page) {
     if (page === null) { return; }
     $state.page = page;
@@ -161,6 +222,9 @@ _readingModes.single = _single;
 _readingModes.strip = _strip;
 
 var $format = {
+  getStyle: function () {
+    return _readingModes[$config.readingMode].getStyle.call(this);
+  },
   previous: function () {
     _readingModes[$config.readingMode].previous();
   },

@@ -90,6 +90,9 @@ function wheelWatcher(event) {
 var _keyHandlers = {
   39: function () { $format.previous(); },
   37: function () { $format.next(); },
+  27: function () {
+    $state.inContextMenu = false;
+  },
   13: function (e) {
     if (e.altKey) {
       $state.View.fullscreen();
@@ -119,9 +122,8 @@ function initWatchers(story) {
 
   handleRelease = function () {
     story.release();
+    $state.page.release();
   };
-
-
   $loop.stopDrag.sub(handleRelease);
   $loop.resize.sub(handleResize);
   $loop.loop.sub(loop);

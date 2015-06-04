@@ -63,6 +63,14 @@ window.onmousemove = function (event) {
 
 window.addEventListener("orientationchange", callUpdate, false);
 window.addEventListener("resize", callUpdate, false);
+window.addEventListener('contextmenu', function (e) {
+  $state.inContextMenu = true;
+}, false);
+
+window.onblur = function () { 
+  $state.inContextMenu = false;
+  $state.isActive = false; 
+};
 
 // window.addEventListener("touchstart", touchStart, false);
 // window.addEventListener("touchend", touchEnd, false);

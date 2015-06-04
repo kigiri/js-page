@@ -12,6 +12,8 @@ var _pagesInView = [],
   dl: null,
   page: null,
   View: null,
+  isActive: true,
+  inContextMenu: false,
   pagesInView: _pagesInView,
   pagesToCleanup: _pagesToCleanup
 };
@@ -22,7 +24,6 @@ $state.eachVisiblePages = function (key) {
     _pagesInView[i][key]();
   }
 }
-
 
 $state.initDl = function () {
   var buff = $config.pageBuffer * (($config.readingMode === "double") ? 2 : 1);

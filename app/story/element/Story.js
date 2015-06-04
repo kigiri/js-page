@@ -122,7 +122,6 @@ function initWatchers(story) {
 
   handleRelease = function () {
     story.release();
-    $state.page.release();
   };
   $loop.stopDrag.sub(handleRelease);
   $loop.resize.sub(handleResize);

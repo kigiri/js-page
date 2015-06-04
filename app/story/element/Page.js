@@ -272,7 +272,7 @@ Page.prototype.next = function () {
 Page.prototype.release = function () {
   if (!this.start) { return this; }
   if (Math.abs($ez.dist(this.start, $state)) < 20) {
-    $format.click($state);
+    $format.click.call(this, $state);
   }
   return this;
 };
@@ -296,7 +296,7 @@ function mouseDown(event) {
   $state.x = event.clientX;
   $state.y = event.clientY;
   this.start = { x: $state.x, y: $state.y };
-  $drag.start();
+  $drag.start(this);
   return false;
 };
 

@@ -1,6 +1,7 @@
 /* global $state, $loop */
 
 var _task,
+    _page = null,
     _inertia = 0,
     _previousY = 0,
     _dragStart = null;
@@ -26,8 +27,12 @@ function reach(yMod, xMod, diff) {
 var $drag = {
   stop: function () {
     if (_dragStart) {
-     _dragStart = false;
-     $loop.stopDrag.request();
+      _dragStart = false;
+      $loop.stopDrag.request();
+      if (_page) {
+        _page.release();
+        _page = null;
+      }
     }
   },
   freeze: function () {
@@ -51,10 +56,11 @@ $drag.start = function () {
       }
     }
   }).repeat().request();
-  $drag.start = function () {
+  $drag.start = function (page) {
     _previousX = $state.x;
     _previousY = $state.y;
     _dragStart = true;
+    _page = page;
   };
   $drag.start();
 };

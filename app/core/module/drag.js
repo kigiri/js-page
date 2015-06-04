@@ -25,11 +25,13 @@ function reach(yMod, xMod, diff) {
 
 var $drag = {
   stop: function () {
-   _dragStart = false;
-   $loop.stopDrag.request();
+    if (_dragStart) {
+     _dragStart = false;
+     $loop.stopDrag.request();
+    }
   },
   freeze: function () {
-    _dragStart = false;
+    $drag.stop();
     _inertia = 0;
   }
 };

@@ -1,4 +1,4 @@
-/* global Average, ImageLoader, $new, $state, $config, $add, $url, $format, $loop, $watchers, $drag */
+/* global Average, ImageLoader, $new, $state, $config, $add, $url, $format, $loop, $watchers, $drag, $ez */
 
 var _style = {
   page: {
@@ -150,7 +150,6 @@ function Page(chapter, pageInfo) {
     className: "page",
     style: _style.page,
     onmousedown: mouseDown.bind(this),
-    onmouseup: mouseUp.bind(this),
   });
   if (pageInfo.path === "filler") {
     this.url = 'filler';
@@ -269,23 +268,33 @@ Page.prototype.next = function () {
   return this.chapter.getPage(this.index + 1);
 };
 
-// Handle user actions
-function mouseUp(event) {
-  this.HTMLElement.removeEventListener("mousemove", this.mouseWatcher);
-  $drag.stop();
-  if (this.distance < 20) {
-    $format.click(event);
+Page.prototype.release = function () {
+  if (!this.start) { return this; }
+  if (Math.abs($ez.dist(this.start, $state)) < 20) {
+    $format.click($state);
   }
+  return this;
 };
 
+
+// Handle user actions
+
 function mouseDown(event) {
+  this.start = null;
+  if (!$state.isActive) {
+    $state.isActive = true;
+    return false;
+  }
+  if ($state.inContextMenu) {
+    $state.inContextMenu = false;
+    return false;
+  }
+
+  if (event.which !== 1) { return; }
   $watchers.callUpdate();
-  var x = $state.x = event.clientX;
-  var y = $state.y = event.clientY;
-  this.mouseWatcher = function (event) {
-    this.distance = (Math.abs(x - event.x) + Math.abs(y - event.y)) / 2;
-  }.bind(this);
-  this.HTMLElement.addEventListener("mousemove", this.mouseWatcher);
+  $state.x = event.clientX;
+  $state.y = event.clientY;
+  this.start = { x: $state.x, y: $state.y };
   $drag.start();
   return false;
 };

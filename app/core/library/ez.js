@@ -6,6 +6,11 @@ function prefixKey(prefix, key) {
 var SVGNS = "http://www.w3.org/2000/svg";
 
 var $ez = {
+  // Tools
+  dist: function (a, b) {
+    return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+  },
+
   // Generate SVG for image placeholders
   fill: (function () {
     var _svg = (new DOMParser()).parseFromString('<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="300" height="841" viewBox="0 0 595 841"><path d="M518.361,595.748l-65.415-65.415l0.002,0.001c21.903-30.928,34.775-68.704,34.775-109.487 c0-104.744-84.911-189.655-189.655-189.655c-40.782,0-78.559,12.873-109.487,34.776l0.001,0.001l-65.258-65.259h395.037V595.748z"/><path d="M77.637,246.398l65.315,65.315l-0.011-0.001c-21.752,30.863-34.528,68.507-34.528,109.135 c0,104.744,84.911,189.655,189.654,189.655c40.63,0,78.275-12.775,109.139-34.529l-0.002-0.007l65.469,65.47H77.637V246.398z"/><text transform="matrix(1 0 0 1 193 495)" style="font-family: Impact; font-size: 200px">99</text></svg>', "image/svg+xml").firstChild;

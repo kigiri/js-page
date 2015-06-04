@@ -28,10 +28,11 @@ function buildCore(jsCode) {
     '<style type="text/css">',
     renderCss(),
     '</style>',
-    '</head><body><div id="size" style="visibility:hidden; position:fixed; right:0; bottom:0"></div>',
+    '</head><body onload="__init__()"><div id="size" style="visibility:hidden; position:fixed; right:0; bottom:0"></div>',
     '<script type="text/javascript">',
-    'var __ = {};',
+    'var __ = {}; function __init__() {',
     jsCode,
+    '};',
     '</script>',
     '</body></html>'
   ].join('\n');

@@ -50,34 +50,22 @@ var $ez = {
       ? window.performance.now.bind(window.performance)
       : Date.now.bind(Date);
   })(),
-  fullscreen: (function (b, _onKey, _elemKey, _offKey) {
-    b = document.body;
-    if (b.requestFullscreen) { b = ''; }
-    else if (b.webkitRequestFullscreen) { b = 'webkit'; }
-    else if (b.mozRequestFullscreen) { b = 'moz'; }
-    else if (b.msRequestFullscreen) { b = 'ms'; }
-    _onKey = prefixKey(b, "requestFullscreen");
-    _elemKey = prefixKey(b, "fullscreenElement");
-    _offKey = b === "moz" ? "mozCancelFullscreen" : prefixKey(b, "exitFullscreen");
-    b = null;
-    b = {
-      on: function (el) {
-        el[_onKey]();
-      },
-      off: function () {
-        document[_elemKey][_offKey]();
-      },
-      toggle: function (el) {
-        if (document[_elemKey]) {
-          document[_offKey]();
-        } else {
-          el[_onKey]();
-        }
+  fullscreen: function (el) {
+    var _key;
+    [
+      "requestFullscreen",
+      "webkitRequestFullscreen",
+      "mozRequestFullScreen",
+      "msRequestFullscreen"
+    ].some(function (key) {
+      if (document.body[key]) {
+        _key = key;
+        el[key]();
+        return true;
       }
-    };
-    console.dir(b);
-    return b;
-  })()
+    });
+    $ez.fullscreen = function (el) { el[_key](); };
+  }
 };
 
 // pre-builded sorts :

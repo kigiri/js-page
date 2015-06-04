@@ -70,11 +70,6 @@ Story.prototype.release = function (xMod, yMod) {
   this.HTMLElement.style.transform = "translate("+ this.x +"px,"+ this.y +"px)";
 };
 
-Story.prototype.toggleFullscreen = function () {
-  $ez.fullscreen.toggle(this.HTMLElement);
-  return this;
-};
-
 Story.prototype.drag = function (xMod, yMod) {
   this.y -= yMod;
   this.x -= xMod;
@@ -97,7 +92,7 @@ var _keyHandlers = {
   37: function () { $format.next(); },
   13: function (e) {
     if (e.altKey) {
-      $state.View.toggleFullscreen();
+      $state.View.fullscreen();
     }
   }
 };

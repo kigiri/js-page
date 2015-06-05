@@ -177,11 +177,17 @@ _double = {
     $state.eachVisiblePages("detatch");
     if (page.isWide) {
       $state.pagesInView.length = 1;
+      $state.pagesInView[0] = page;
     } else {
+      if (page.isPair()) {
+        $state.pagesInView[0] = page.previous();
+        $state.pagesInView[1] = page;
+      } else {
+        $state.pagesInView[1] = page.next();
+        $state.pagesInView[0] = page;
+      }
       $state.pagesInView.length = 2;
-      $state.pagesInView[1] = page.next();
     }
-    $state.pagesInView[0] = page;
     $state.eachVisiblePages("attach");
     handlePageLoad(page);
   },

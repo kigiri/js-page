@@ -1,8 +1,28 @@
 /* global Menu, Chapter, $state, $new, $url, $config, $add, $format, $loop */
+var _keyToCopy = [
+  "title",
+  "path",
+  "type",
+  "ongoing",
+  "readingTo",
+  "description",
+  "genre",
+  "year",
+  "rating",
+  "tags"
+];
 
 function Story(storyInfo) {
   $state.Story = this;
   this.id = storyInfo.path;
+
+  _keyToCopy.forEach(function (key) {
+    this[key] = storyInfo[key];
+  }.bind(this));
+
+  $config.loadStory(this);
+  $config.updateReadingMode($state);
+
   this.teamsData = storyInfo.teams;
   this.availableTeams = Object.keys(this.teamsData);
   this.team = this.availableTeams[0];
@@ -105,6 +125,24 @@ function loop() {
   $state.eachVisiblePages("updateDownloadBar");
 }
 function handleResize() {
+  var oldRm = $config.readingMode, newRm;
+  $config.updateReadingMode($state);
+  newRm = $config.readingMode;
+  if (oldRm !== newRm) {
+    if (newRm === "double") {
+      $format.load($state.page);
+    } else if (newRm === "single") {
+      if ($state.page.url === "filler") {
+        if ($state.page.isPair()) {
+          $format.load($state.page.previous());
+        } else {
+          $format.load($state.page.next());
+        }
+      } else {
+        $format.load($state.page);
+      }
+    }
+  }
   $state.eachVisiblePages("update");
 }
 

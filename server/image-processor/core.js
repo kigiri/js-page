@@ -102,7 +102,7 @@ openStory({
   path: _.deburr(_.kebabCase("All You Need Is Kill")), // String
   type: "manga", // StoryType ["manga", "manhua", "manwa", "manfra", "comic", "graphicnovel", "lightnovel"]
   ongoing: false, // Boolean
-  rightToLeft: false,
+  readingTo: "left", // left, right or bottom
   description: "",
   genre: [
     "Action",

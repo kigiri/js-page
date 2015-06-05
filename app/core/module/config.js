@@ -2,30 +2,31 @@
 
 var $config = {
   invertPageOrder: true,
-  readingMode: "single", // single, double or strip
+  autoReadingMode: true,
+  readingMode: "single", // single, double or strip,
   background: "black",
   pageBuffer: 50, // amount of page to precache ahead
   lang: 'fr',
   fit: true
 };
 
-// Restore variables from local storage
-Object.keys($config).forEach(function (key) {
-  var val = localStorage[key];
-  var type = typeof $config[key];
-  if (val) {
-    if (type === "boolean") {
-      val = (val === "true");
-    } else if (type === "number") {
-      val = parseInt(val);
-      if (isNaN(val)) { return; }
-    } else if (type !== "string") {
-      try { val = JSON.stringify(val); }
-      catch (e) { return; }
-    }
-    $config[key] = val;
+$config.updateReadingMode = function (state) {
+  if (!$config.autoReadingMode) { return; }
+  $config.readingMode = (state.height > state.width) ? "single" : "double";
+}
+
+$config.loadStory = function (story) {
+  if (story.readingTo === "bottom") {
+    $config.readingMode = "strip";
+    $config.invertPageOrder = false;
+    $config.autoReadingMode = false;
+    return;
   }
-});
+
+  if (story.readingTo === "left") {
+    $config.invertPageOrder = true;
+  }
+};
 
 var _tasks = {};
 
@@ -53,4 +54,20 @@ $config.init = function (i18n, bg) {
   _tasks.background = bg;
 }
 
-
+// Restore variables from local storage
+Object.keys($config).forEach(function (key) {
+  var val = localStorage[key];
+  var type = typeof $config[key];
+  if (val) {
+    if (type === "boolean") {
+      val = (val === "true");
+    } else if (type === "number") {
+      val = parseInt(val);
+      if (isNaN(val)) { return; }
+    } else if (type !== "string") {
+      try { val = JSON.stringify(val); }
+      catch (e) { return; }
+    }
+    $config[key] = val;
+  }
+});

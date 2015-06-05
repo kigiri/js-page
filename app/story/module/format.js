@@ -16,6 +16,13 @@ function getSharedStyle() {
   };
 }
 
+function applyWideSplit(style) {
+  if (style.backgroundPosition !== '0% 50%'
+    && style.backgroundPosition !== '100% 50%') {
+    style.backgroundPosition = $config.invertPageOrder ? '100% 50%' : '0% 50%';
+  }
+}
+
 var
 _strip = {
   getStyle: function () {
@@ -47,6 +54,9 @@ _strip = {
       : this.height)
     +'px';
 
+    if (this.isWide) {
+      style.backgroundSize = 'contain';
+    }
     this.HTMLElement.style.width = '100%';
     this.HTMLElement.style.backgroundPosition = '50% 50%';
     this.chapter.story.HTMLElement.style.height = '100%';
@@ -128,17 +138,27 @@ _single = {
     }
   },
   resize: function () {
-    var style = this.HTMLElement.style;
-    if ($config.fit) {
-      style.height = $state.height +'px';
-    } else {
-      style.height = ~~(($state.width / this.width) * this.height) +'px';
-    }
+    var style = this.HTMLElement.style,
+        height = $config.fit
+          ? $state.height
+          : ~~(($state.width / this.width) * this.height);
+
+    style.height = height +'px';
     style.width = '100%';
     if (this.isWide) {
-      if (style.backgroundPosition !== '0% 50%'
-        && style.backgroundPosition !== '100% 50%') {
-        style.backgroundPosition = $config.invertPageOrder ? '100% 50%' : '0% 50%';
+      var stateRatio = $state.width / $state.height;
+      if ((this.width / 2) / this.height > stateRatio) {
+        // 0.01 is a forced margin to be sure we don't miss part of the picture
+        var ratio = $state.width / (this.width / 2) - 0.01;
+        style.backgroundSize = ~~(ratio * this.width) +'px '
+        + ~~(ratio * this.height) +'px';
+        applyWideSplit(style);
+      } else if (this.width / this.height < stateRatio) {
+        style.backgroundSize = 'contain';
+        style.backgroundPosition = '50% 50%';
+      } else {
+        style.backgroundSize = 'cover';
+        applyWideSplit(style);
       }
     } else {
       style.backgroundPosition = '50% 50%';
@@ -206,6 +226,7 @@ _double = {
     style.width = '50%';
     style.float = 'right';
     if (this.isWide) {
+      style.backgroundSize = 'contain';
       style.width = '100%';
       style.backgroundPosition = '50% 50%';
     } else if (this.isPair()) {

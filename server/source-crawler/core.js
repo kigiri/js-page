@@ -1,4 +1,5 @@
 const cheerio = require('cheerio'),
+      parseXML = require('xml2js').parseStringAsync,
       fs = require('fs'),
       path = require("path"),
       _ = require("lodash"),
@@ -7,12 +8,18 @@ const cheerio = require('cheerio'),
 
 const headers = { 'User-Agent': 'request', 'Accept': '*/*' };
 
-function handleError(err) {
-  console.error(err)
-}
+function handleError(err) { console.error(err); }
 
 function get(url) {
   return request.getAsync({url, headers}).get(1).catch(handleError);
+}
+
+function getXML(url) {
+  return get(url).then(parseXML);
+}
+
+function getRSS(url) {
+  return getXML(url).then(xml => xml.rss.channel[0]);
 }
 
 function getHTML(url) {
@@ -24,7 +31,6 @@ function urlBaseName(url) {
 }
 
 function saveImage(url, localpath) {
-  console.log("saving", url.slice(-10), "to", localpath.slice(14));
   let stream = fs.createWriteStream(localpath + urlBaseName(url));
   request(url).pipe(stream);
   return stream;
@@ -103,6 +109,7 @@ function loadAllList(list, fn) {
       setTimeout(recur, 3600000 - diff);
     }
   }
+  console.log("List started");
   recur();
 }
 
@@ -114,6 +121,9 @@ module.exports = {
   loadAllList,
   getChapterMaker,
   toId,
+  get: get,
   getHTML,
+  getXML,
+  getRSS,
   mkdirp
 };

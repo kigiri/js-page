@@ -26,6 +26,7 @@ function parseChapterList($) {
         pathMaker = core.getChapterMaker(title),
         lastChapter = parseInt(id);
 
+  console.log("loading webtoon", title);
   let i = 0, chapterList = [];
   while (++i <= lastChapter) {
     let c = generateChapter(this.webtoonId, i);
@@ -36,7 +37,6 @@ function parseChapterList($) {
 }
 
 module.exports = function (webtoonId, opts, cb) {
-  console.log("loading webtoon", webtoonId);
   const url = _baseUrl +"list?title_no="+ webtoonId;
   core.getHTML(url).bind({webtoonId}).then(parseChapterList)
   .then(chapterList => core.loadAllChapters(chapterList, getChapter, _ => {

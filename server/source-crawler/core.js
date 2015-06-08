@@ -16,7 +16,7 @@ function getHTML(url) {
 }
 
 function saveImage(url, localpath) {
-  console.log("saving", url, "to", localpath);
+  console.log("saving", url.slice(-10), "to", localpath.slice(14));
   let stream = fs.createWriteStream(localpath + path.basename(url));
   request(url).pipe(stream);
   return stream;
@@ -51,10 +51,36 @@ function saveAllImages(imageArray, chapterPath, cb) {
   mkdirp(chapterPath).then(recur)
 }
 
+// fn is called with chapterinfo, invoke this.done() to start the next chapter
+function loadAllChapters(chapterList, fn, cb) {
+  const max = chapterList.length;
+  function tryChapter(i) {
+    if (i >= max) { return (cb || ()=>{})(); }
+    let chapterInfo = chapterList[i];
+    if (!chapterInfo.loading) {
+      chapterInfo.loading = true;
+      fs.statAsync(chapterInfo.path).then(stats => {
+        // check if dir, then open it, then should try open .done
+        tryChapter(i + 1);
+      }).catch(err => {
+        if (err.code === "ENOENT") {
+          fn.call({ done: () => { tryChapter(i + 1); } }, chapterInfo);
+        } else {
+          console.error(err);
+        }
+      })
+    } else {
+      tryChapter(i + 1);
+    }
+  }
+  tryChapter(0);
+}
+
 module.exports = {
   saveImage,
   markAsDone,
   saveAllImages,
+  loadAllChapters,
   getChapterMaker,
   toId,
   getHTML,

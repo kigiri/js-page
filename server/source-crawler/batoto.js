@@ -32,18 +32,19 @@ function getImageLink($) {
   return $('#comic_page')[0].attribs.src;
 }
 
-function expandChapter(chapterInfo, chapterIndex, cb) {
-  core.getHTML(chapterInfo.href).bind(chapterInfo).then($ => {
+function expandChapter(chapterInfo) {
+  const done = this.done;
+  core.getHTML(chapterInfo.href).then($ => {
     const selector = $('#page_select')[0];
     if (!selector) {
       if ($('title').text() === "Error") {
-        return console.log("Error loading", this.href);
+        console.warn("Error loading", this.href);
+        return done();
       }
       // strip mode
       let srcs = $('img').map((i, e) => e.attribs.src).get();
       srcs = _.uniq(srcs.filter(src => _srcValidity.test(src)));
-      core.saveAllImages(srcs, chapterInfo.path, _ => cb(chapterIndex + 1));
-      return;
+      return core.saveAllImages(srcs, chapterInfo.path, done);
     }
     // page per page mode
     let opts = selector.children.filter(e => {
@@ -53,7 +54,7 @@ function expandChapter(chapterInfo, chapterIndex, cb) {
 
     function loadNext() {
       if (++i >= opts.length) {
-        core.markAsDone(chapterInfo.path).then(_ => cb(chapterIndex + 1));
+        core.markAsDone(chapterInfo.path).then(done);
       } else {
         core.getHTML(opts[i].attribs.value).then(getImageLink).then(src =>
           core.saveImage(src, chapterInfo.path).on('close', loadNext));
@@ -62,39 +63,19 @@ function expandChapter(chapterInfo, chapterIndex, cb) {
 
     core.mkdirp(chapterInfo.path).then(_ =>
       core.saveImage(url, chapterInfo.path).on('close', loadNext));
-    return;
   });
 }
 
 module.exports = function (batotoUrl, opts, cb) {
-  const title = batotoUrl.split(/-([^-]+$)/)[0],
-        makeChapterPath = core.getChapterMaker(title);
+  console.log("getting:", batotoUrl);
   core.getHTML(_sourceURL + batotoUrl)
   .bind(opts).then(parseChapterList).then(chapterList => {
-    chapterList.forEach(c => c.path = makeChapterPath(c));
-    function tryChapter(i) {
-      if (i >= chapterList.length) {
-        console.log(title, "is done !");
-        return cb();
-      }
-      let chapterInfo = chapterList[i];
-      if (!chapterInfo.loading) {
-        chapterInfo.loading = true;
-        fs.statAsync(chapterInfo.path).then(stats => {
-          // check if dir, then open it, then should try open .done
-          tryChapter(i + 1);
-        }).catch(err => {
-          if (err.code === "ENOENT") {
-            expandChapter(chapterInfo, i, tryChapter);
-          } else {
-            console.error(err);
-          }
-        })
-      } else {
-        tryChapter(i + 1);
-      }
-    }
-    tryChapter(0);
+    const makePath = core.getChapterMaker(batotoUrl.split(/-([^-]+$)/)[0]);
+    chapterList.forEach(c => c.path = makePath(c));
+    core.loadAllChapters(chapterList, expandChapter, _ => {
+      console.log(batotoUrl, "all done");
+      cb();
+    });
   });
 }
 

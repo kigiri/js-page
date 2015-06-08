@@ -1,6 +1,4 @@
-const core = require("./core"),
-      _ = require("lodash"),
-      q = require("bluebird");
+const core = require("./core");
 
 const _baseUrl = "http://mangacow.co/";
 

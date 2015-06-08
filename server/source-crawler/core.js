@@ -5,21 +5,27 @@ const cheerio = require('cheerio'),
       request = require("request"),
       mkdirp = require("bluebird").promisify(require("mkdirp"));
 
+const headers = { 'User-Agent': 'request', 'Accept': '*/*' };
+
 function handleError(err) {
   console.error(err)
 }
 
 function get(url) {
-  return request.getAsync(url).get(1).catch(handleError);
+  return request.getAsync({url, headers}).get(1).catch(handleError);
 }
 
 function getHTML(url) {
   return get(url).then(cheerio.load);
 }
 
+function urlBaseName(url) {
+  return path.basename(url).split(/[?&]/)[0];
+}
+
 function saveImage(url, localpath) {
   console.log("saving", url.slice(-10), "to", localpath.slice(14));
-  let stream = fs.createWriteStream(localpath + path.basename(url));
+  let stream = fs.createWriteStream(localpath + urlBaseName(url));
   request(url).pipe(stream);
   return stream;
 }
@@ -77,11 +83,35 @@ function loadAllChapters(chapterList, fn, cb) {
   tryChapter(0);
 }
 
+
+const opts = {
+  bannedTeams: [],
+  languages: ["french", "english"],
+};
+
+function loadAllList(list, fn) {
+  let i = -1, start = Date.now();
+  function recur() {
+    if (++i < list.length) {
+      fn(list[i], opts, recur);
+    } else {
+      const now = Date.now(),
+            diff = now - start;
+      console.log("List completed in", (diff / 1000).toFixed(1) +"sec");
+      i = -1;
+      start = now;
+      setTimeout(recur, 3600000 - diff);
+    }
+  }
+  recur();
+}
+
 module.exports = {
   saveImage,
   markAsDone,
   saveAllImages,
   loadAllChapters,
+  loadAllList,
   getChapterMaker,
   toId,
   getHTML,

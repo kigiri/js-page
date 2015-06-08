@@ -30,10 +30,15 @@ function urlBaseName(url) {
   return path.basename(url).split(/[?&]/)[0];
 }
 
-function saveImage(url, localpath) {
-  let stream = fs.createWriteStream(localpath + urlBaseName(url));
-  request(url).pipe(stream);
-  return stream;
+function saveImage(url, localpath, cb) {
+  let fileStream = fs.createWriteStream(localpath + urlBaseName(url)),
+      requestStream = request(url);
+
+  requestStream.pipe(fileStream);
+  fileStream.on('close', () => {
+    requestStream.abort();
+    cb();
+  });
 }
 
 function toId(str) {
@@ -58,7 +63,7 @@ function saveAllImages(imageArray, chapterPath, cb) {
     if (++i >= imageArray.length) {
       markAsDone(chapterPath).then(cb);
     } else {
-      saveImage(imageArray[i], chapterPath).on('close', recur);
+      saveImage(imageArray[i], chapterPath, recur);
     }
   }
   mkdirp(chapterPath).then(recur)

@@ -57,12 +57,12 @@ function expandChapter(chapterInfo) {
         core.markAsDone(chapterInfo.path).then(done);
       } else {
         core.getHTML(opts[i].attribs.value).then(getImageLink).then(src =>
-          core.saveImage(src, chapterInfo.path).on('close', loadNext));
+          core.saveImage(src, chapterInfo.path, loadNext));
       }
     }
 
     core.mkdirp(chapterInfo.path).then(_ =>
-      core.saveImage(url, chapterInfo.path).on('close', loadNext));
+      core.saveImage(url, chapterInfo.path, loadNext));
   });
 }
 

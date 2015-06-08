@@ -5,10 +5,12 @@ const cheerio = require('cheerio'),
       request = require("request"),
       mkdirp = require("bluebird").promisify(require("mkdirp"));
 
+function handleError(err) {
+  console.error(err)
+}
+
 function get(url) {
-  return request.getAsync(url).get(1).catch(err => {
-    console.error(err);
-  });
+  return request.getAsync(url).get(1).catch(handleError);
 }
 
 function getHTML(url) {
@@ -27,8 +29,7 @@ function toId(str) {
 }
 
 function markAsDone(dirpath) {
-  return fs.writeFileAsync(dirpath + '.done', '')
-  .bind(console).catch(console.error);
+  return fs.writeFileAsync(dirpath + '.done', '').catch(handleError);
 }
 
 function getChapterMaker(title) {

@@ -1,10 +1,11 @@
-const fs = require('fs'),
-      _ = require("lodash"),
-      core = require("./core");
 "use strict";
 
-const _sourceURL = "http://bato.to/comic/_/comics/",
-      _srcValidity = /^http:\/\/img\.bato\.to\/comics\/.+img[0-9]{6}\.([a-z]+)$/;
+const
+  fs = require('fs'),   
+  _ = require("lodash"),
+  core = require("./core"),
+  _sourceURL = "http://bato.to/comic/_/comics/",
+  _srcValidity = /^http:\/\/img\.bato\.to\/comics\/.+img[0-9]{6}\.([a-z]+)$/;
 
 function processTitle(el) {
   var s = el.title.split(' | Sort: ');
@@ -45,7 +46,7 @@ function expandChapter(chapterInfo) {
       // strip mode
       let srcs = $('img').map((i, e) => e.attribs.src).get();
       srcs = _.uniq(srcs.filter(src => _srcValidity.test(src)));
-      return core.saveAllImages(srcs, chapterInfo.path, done);
+      return core.saveAllImages(srcs, chapterInfo, done);
     }
     // page per page mode
     let opts = selector.children.filter(e => {

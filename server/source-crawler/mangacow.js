@@ -20,7 +20,7 @@ function extractLinks(rawHTML) {
 function getChapter(chapterInfo) {
   const done = this.done;
   core.get(chapterInfo.href).then(extractLinks).then(srcs =>
-    core.saveAllImages(srcs, chapterInfo.path, done));
+    core.saveAllImages(srcs, chapterInfo, done));
 }
 
 function parseChapterList($) {

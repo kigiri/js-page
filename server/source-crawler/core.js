@@ -8,7 +8,10 @@ const cheerio = require('cheerio'),
       request = require("request"),
       mkdirp = require("bluebird").promisify(require("mkdirp"));
 
-const headers = { 'User-Agent': 'request', 'Accept': '*/*' };
+const headers = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2420.0 Safari/537.36',
+  'Accept': '*/*'
+};
 
 function handleError(err) { console.error(err); }
 
@@ -29,7 +32,7 @@ function getHTML(url) {
 }
 
 function urlBaseName(url) {
-  return path.basename(url).split(/[?&]/)[0];
+  return path.basename(url.url || url).split(/[?&]/)[0];
 }
 
 function saveImage(url, localpath, cb) {
@@ -59,16 +62,18 @@ function getChapterMaker(title) {
   }
 }
 
-function saveAllImages(imageArray, chapterPath, cb) {
+function saveAllImages(imageArray, chapterInfo, cb) {
   let i = -1;
+  const _headers = _.assign({ Referer: chapterInfo.href }, headers);
+  console.log("loading all images from", chapterInfo.href);
   function recur() {
     if (++i >= imageArray.length) {
-      markAsDone(chapterPath).then(cb);
+      markAsDone(chapterInfo.path).then(cb);
     } else {
-      saveImage(imageArray[i], chapterPath, recur);
+      saveImage({ url: imageArray[i], headers: _headers}, chapterInfo.path, recur);
     }
   }
-  mkdirp(chapterPath).then(recur)
+  mkdirp(chapterInfo.path).then(recur);
 }
 
 // fn is called with chapterinfo, invoke this.done() to start the next chapter

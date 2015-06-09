@@ -18,7 +18,7 @@ function getChapter(chapterInfo) {
   const done = this.done;
   core.getHTML(chapterInfo.href).then($ => {
     const srcs = $("._images").map((_, i) => i.attribs["data-url"]).get();
-    return core.saveAllImages(srcs, chapterInfo.path, done);
+    return core.saveAllImages(srcs, chapterInfo, done);
   });
 }
 
@@ -45,5 +45,5 @@ module.exports = function (webtoonId, opts, cb) {
     console.log("webtoon", webtoonId, "completed");
     cb();
   }));
-}
+};
 

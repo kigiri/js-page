@@ -32,7 +32,7 @@ function getChapter(chapterInfo) {
       list.push(core.getHTML(base + i));
     }
     q.settle(list).map(result => result._settledValue('#manga-page')[0].attribs.src)
-    .then(srcs => core.saveAllImages(srcs, chapterInfo.path, done));
+    .then(srcs => core.saveAllImages(srcs, chapterInfo, done));
   });
 }
 

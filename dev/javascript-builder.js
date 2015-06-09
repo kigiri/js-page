@@ -1,3 +1,5 @@
+"use strict";
+
 var
   fs = require('fs'),
   minify = require('uglify-js').minify,

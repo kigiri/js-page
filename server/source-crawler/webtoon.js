@@ -1,3 +1,5 @@
+"use strict";
+
 const core = require("./core");
 
 const _baseUrl = "http://www.webtoons.com/_/_/_/";

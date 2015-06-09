@@ -1,3 +1,5 @@
+"use strict";
+
 const core = require("./core"),
       q = require("bluebird");
 

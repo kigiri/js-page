@@ -1,3 +1,5 @@
+"use strict";
+
 const cheerio = require('cheerio'),
       parseXML = require('xml2js').parseStringAsync,
       fs = require('fs'),

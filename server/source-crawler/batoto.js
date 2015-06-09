@@ -1,6 +1,7 @@
 const fs = require('fs'),
       _ = require("lodash"),
       core = require("./core");
+"use strict";
 
 const _sourceURL = "http://bato.to/comic/_/comics/",
       _srcValidity = /^http:\/\/img\.bato\.to\/comics\/.+img[0-9]{6}\.([a-z]+)$/;

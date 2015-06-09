@@ -4,7 +4,7 @@
   "description": "simple reader for comics, man(ga|hua|hwa) written in javascript",
   "main": "app/main.js",
   "scripts": {
-    "start": "iojs --harmony_classes --harmony_arrow_functions --harmony_modules --harmony --es_staging --use-strict server.js",
+    "start": "iojs --harmony_classes --harmony_arrow_functions --harmony_modules --harmony --es_staging server.js",
     "test": "echo 'no test yet sorry bro'"
   },
   "keywords": [

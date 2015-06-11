@@ -6,7 +6,8 @@ const core = require("./core"),
 const _baseUrl = "http://mangastream.com/manga/";
 
 function generateChapter(href, title) {
-  const index = parseInt(href.split(/readms\.com\/r\/[^\/]+\/([0-9]+)\//)[1]);
+  let index = decodeURIComponent(href.split(/readms\.com\/r\/[^\/]+\/([^\/]+)\//)[1]);
+  index = core.parseChapterIndex(index);
   return {
     title,
     index,

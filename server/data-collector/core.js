@@ -30,10 +30,22 @@ function getImageDetails(page) {
     next();
   });
 }
-const keys = [ "height", "width", "name" ];
-function saveChapterData(dataPath, pages) {
-  fs.writeFileAsync(dataPath, JSON.stringify(pages, keys)).catch(console.error);
-}
+
+const saveChapterData = (() => {
+  const keys = [ "height", "width", "name" ];
+  return (dataPath, pages) => 
+    fs.writeFileAsync(dataPath, JSON.stringify(pages, keys))
+    .catch(console.error);
+})();
+
+const saveStoryData = (() => {
+  const keys = [
+  "files",
+  "readingMode"
+  ];
+  return story => fs.writeFileAsync(joinPath(_assetsPath, story.name, "data.json"),
+    JSON.stringify(_.pick(story, keys)));
+})();
 
 function detectType(chapterInfo) {
   console.log(chapterInfo);
@@ -41,6 +53,10 @@ function detectType(chapterInfo) {
 
 function getMedianScore(base, arr) {
   return _.reduce(arr, (score, value) => score + Math.abs(base - value));
+}
+
+function getMax(arr, key) {
+  return _.reduce(arr, (a, b) => a < b[key] ? b[key] : a, -Infinity);
 }
 
 function getMedian(arr, key) {
@@ -104,6 +120,11 @@ function insertFillers(pages) {
   }
 }
 
+function generateImageData(pages, dataPath) {
+  return _.serial(pages, getImageDetails)
+  .then(() => saveChapterData(dataPath, pages));
+}
+
 function getPageSizes(pages, dataPath, cb) {
   fs.readFileAsync(dataPath)
   .then(JSON.parse)
@@ -111,9 +132,7 @@ function getPageSizes(pages, dataPath, cb) {
   .then(cb)
   .catch(err => {
     if (err.code === 'ENOENT') {
-      _.serial(pages, getImageDetails)
-      .then(() => saveChapterData(dataPath, pages))
-      .then(cb);
+      generateImageData(pages, dataPath).then(cb);
     } else {
       console.warn(err);
     }
@@ -121,7 +140,6 @@ function getPageSizes(pages, dataPath, cb) {
 }
 
 function collectChapterData(pages, chapterPath) {
-  console.log(chapterPath);
   if (!pages || !pages.length) { return this.next(); }
   const
     dataPath = joinPath(path.dirname(pages[0].path), "data.json"),
@@ -164,9 +182,12 @@ const getSubDir = path => getSubfileStats(path).filter(f => f.stat.isDirectory()
 
 const imageFilter = filename => /\.(jpe?g|png|gif|webp)$/.test(filename);
 function getAllImages(files, chapterPath) {
-  if (!files || !files.length) { return; }
-  _db.chapters[chapterPath] = files.filter(imageFilter)
-  .map(name => ({ path: joinPath(chapterPath, name), name }));
+  let pages = files.filter(imageFilter);
+  if (!pages || !pages.length) { return; }
+  return _db.chapters[chapterPath] = pages.map(name => ({
+    path: joinPath(chapterPath, name),
+    name
+  }));
 }
 
 function openChapter(chapter) {
@@ -174,8 +195,47 @@ function openChapter(chapter) {
   return fs.readdirAsync(chapterPath).then(files => getAllImages(files, chapterPath));
 };
 
+function linkChapterToStory(chapter) {
+  if (!chapter.story) { console.log("chapter", chapter); }
+  if (!_db.stories[chapter.story]) {
+    _db.stories[chapter.story] = {
+      name: chapter.story,
+      chapters: {}
+    };
+  }
+  _db.stories[chapter.story].chapters[chapter.name] = chapter;
+}
+
+function collectStoryData(story) {
+  const
+    chapters = story.chapters,
+    widthRegularityScore = getMedian(chapters, "widthRegularityScore").median,
+    heightRegularityScore = getMedian(chapters, "heightRegularityScore").median;
+
+  if (widthRegularityScore < 1 && heightRegularityScore > 1.5) {
+    story.readingMode = "strip";
+  }
+
+  story.files = _.chain(chapters).map(c => {
+    return _.pick(c, ["name", "team", "language"]);
+  }).uniq(c => c.name);
+  saveStoryData(story);
+}
+
 const subDir = cb => (info => getSubDir(joinPath(info.path, info.file)).map(cb));
 
-//       public/assets/     story/ language/ team/ -> chapter :D
-getSubDir(_assetsPath).each(subDir(subDir(subDir(openChapter))))
-.then(() => _.serial(_db.chapters, collectChapterData));
+function start() {
+  //       public/assets/     story/ language/ team/ -> chapter :D
+  getSubDir(_assetsPath).each(subDir(subDir(subDir(openChapter))))
+  .then(() => _.serial(_db.chapters, collectChapterData))
+  .then(() => _.each(_db.chapters, linkChapterToStory))
+  .then(() => _.each(_db.stories, collectStoryData))
+  // .then(() => console.log(_db))
+  .catch(console.error);
+}
+
+module.exports = {
+  getAllImages,
+  generateImageData,
+  start,
+}

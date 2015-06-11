@@ -6,6 +6,7 @@ const cheerio = require('cheerio'),
       path = require("path"),
       _ = require("lodash"),
       request = require("request"),
+      collect = require("../data-collector/core"),
       mkdirp = require("bluebird").promisify(require("mkdirp"));
 
 const headers = {
@@ -51,14 +52,25 @@ function toId(str) {
 }
 
 function markAsDone(dirpath) {
+  fs.readdirAsync(dirpath)
+  .then(files => collect.getAllImages(files, dirpath))
+  .then(pages => collect.generateImageData(pages, dirpath + 'data.json')).catch(handleError);
   return fs.writeFileAsync(dirpath + '.done', '').catch(handleError);
+}
+
+function parseChapterIndex(index) {
+  index = index.replace(/^0+/, '');
+  if (!index) {
+    index = '0';
+  }
+  return index;
 }
 
 function getChapterMaker(title) {
   const _basePath = 'public/assets/'+ toId(title) +'/';
   return function (chapterInfo) {
     return _basePath + chapterInfo.lang +'/'+ chapterInfo.team +'/'
-    + ("0000" + chapterInfo.index.toFixed(3).replace('.', '')).slice(-8) +'/';
+    + chapterInfo.index +'/';
   }
 }
 
@@ -87,6 +99,7 @@ function loadAllChapters(chapterList, fn, cb) {
       fs.statAsync(chapterInfo.path).then(stats => {
         // check if dir, then open it, then should try open .done
         tryChapter(i + 1);
+          // fn.call({ done: () => { tryChapter(i + 1); } }, chapterInfo);
       }).catch(err => {
         if (err.code === "ENOENT") {
           fn.call({ done: () => { tryChapter(i + 1); } }, chapterInfo);
@@ -132,6 +145,7 @@ module.exports = {
   loadAllChapters,
   loadAllList,
   getChapterMaker,
+  parseChapterIndex,
   toId,
   get: get,
   getHTML,

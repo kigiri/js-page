@@ -8,8 +8,13 @@ const
   _srcValidity = /^http:\/\/img\.bato\.to\/comics\/.+img[0-9]{6}\.([a-z]+)$/;
 
 function processTitle(el) {
-  var s = el.title.split(' | Sort: ');
-  return { title: s[0].trim(), index: parseFloat(s[1]), href: el.href};
+  const s = el.title.split(' | Sort: ');
+  let index = s[1].slice(-3);
+  return {
+    title: s[0].trim(),
+    index: index,
+    href: el.href
+  };
 }
 
 function parseChapterList($) {
@@ -63,6 +68,7 @@ function expandChapter(chapterInfo) {
       }
     }
 
+    console.log("loading all images from", url.replace(/[^\/]+$/, ''));
     core.mkdirp(chapterInfo.path).then(_ =>
       core.saveImage(url, chapterInfo.path, loadNext));
   });

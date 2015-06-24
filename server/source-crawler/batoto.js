@@ -3,6 +3,7 @@
 const
   fs = require('fs'),   
   _ = require("lodash"),
+  imgmin = require("imagemin"),
   core = require("./core"),
   _sourceURL = "http://bato.to/comic/_/comics/",
   _srcValidity = /^http:\/\/img\.bato\.to\/comics\/.+img[0-9]{6}\.([a-z]+)$/;
@@ -55,22 +56,22 @@ function expandChapter(chapterInfo) {
     }
     // page per page mode
     let opts = selector.children.filter(e => {
-      if (e.type === "text") { return false; }
-      return !(e.attribs.selected);
-    }), url = $('#comic_page')[0].attribs.src, i = -1;
+        if (e.type === "text") { return false; }
+        return !(e.attribs.selected);
+      }),
+      url = $('#comic_page')[0].attribs.src, i = -1,
+      srcs = [ url ];
 
     function loadNext() {
       if (++i >= opts.length) {
-        core.markAsDone(chapterInfo.path).then(done);
+        core.saveAllImages(srcs, chapterInfo, done);
       } else {
         core.getHTML(opts[i].attribs.value).then(getImageLink).then(src =>
-          core.saveImage(src, chapterInfo.path, loadNext));
+          loadNext(srcs.push(src)));
       }
     }
 
-    console.log("loading all images from", url.replace(/[^\/]+$/, ''));
-    core.mkdirp(chapterInfo.path).then(_ =>
-      core.saveImage(url, chapterInfo.path, loadNext));
+    core.mkdirp(chapterInfo.path).then(loadNext);
   });
 }
 

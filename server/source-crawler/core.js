@@ -14,31 +14,41 @@ const headers = {
   'Accept': '*/*'
 };
 
-function handleError(err) { console.error(err); }
+const
+  handleError = err =>
+    console.error(err),
 
-function get(url) {
-  return request.getAsync({url, headers}).get(1).catch(handleError);
-}
+  get = url =>
+    request.getAsync({url, headers}).get(1).catch(handleError),
 
-function getXML(url) {
-  return get(url).then(parseXML);
-}
+  getXML = url =>
+    get(url).then(parseXML),
 
-function getRSS(url) {
-  return getXML(url).then(xml => xml.rss.channel[0]);
-}
+  getRSS = url =>
+    getXML(url).then(xml => xml.rss.channel[0]),
 
-function getHTML(url) {
-  return get(url).then(cheerio.load);
-}
+  getHTML = url =>
+    get(url).then(cheerio.load),
 
-function urlBaseName(url) {
-  return path.basename(url.url || url).split(/[?&]/)[0];
-}
+  getExt = filename =>
+    filename.split(/(\.[^.]+)$/)[1],
 
-function saveImage(url, localpath, cb) {
-  let fileStream = fs.createWriteStream(localpath + urlBaseName(url)),
-      requestStream = request(url);
+  urlBasename = url =>
+    path.basename(url).split(/[?&]/)[0],
+
+  ifErrorNoEnt = (resolve, reject) =>
+    err => err.code === "ENOENT" ? resolve() : reject(handleError(err)),
+
+  getNameFromOpts = opts =>
+    path.join(opts.path, opts.index + getExt(urlBasename(opts.url)));
+
+function saveImage(reqOpts, cb) {
+  if (!reqOpts.url || reqOpts.url === "undefined") { return handleError(reqOpts); }
+
+  console.log("saving", reqOpts.url);
+
+  let fileStream = fs.createWriteStream(getNameFromOpts(reqOpts)),
+      requestStream = request(reqOpts);
 
   requestStream.pipe(fileStream);
   fileStream.on('close', () => {
@@ -54,8 +64,9 @@ function toId(str) {
 function markAsDone(dirpath) {
   fs.readdirAsync(dirpath)
   .then(files => collect.getAllImages(files, dirpath))
-  .then(pages => collect.generateImageData(pages, dirpath + 'data.json')).catch(handleError);
-  return fs.writeFileAsync(dirpath + '.done', '').catch(handleError);
+  .then(pages => collect.generateImageData(pages, path.join(dirpath, 'data.json')))
+  .catch(handleError);
+  return fs.writeFileAsync(path.join(dirpath, '.done'), '').catch(handleError);
 }
 
 function parseChapterIndex(index) {
@@ -68,52 +79,68 @@ function parseChapterIndex(index) {
 
 function getChapterMaker(title) {
   const _basePath = 'public/assets/'+ toId(title) +'/';
-  return function (chapterInfo) {
-    return _basePath + chapterInfo.lang +'/'+ chapterInfo.team +'/'
-    + chapterInfo.index +'/';
-  }
+  return chapter =>
+    path.join(_basePath, chapter.lang, chapter.team, chapter.index.toString())
 }
 
 function saveAllImages(imageArray, chapterInfo, cb) {
   let i = -1;
-  const _headers = _.assign({ Referer: chapterInfo.href }, headers);
+  const
+    _headers = _.assign({ Referer: chapterInfo.href }, headers),
+    _path = chapterInfo.path;
+
   console.log("loading all images from", chapterInfo.href);
   function recur() {
     if (++i >= imageArray.length) {
-      markAsDone(chapterInfo.path).then(cb);
+      markAsDone(_path).then(cb);
     } else {
-      saveImage({ url: imageArray[i], headers: _headers}, chapterInfo.path, recur);
+      const
+        url = imageArray[i],
+        oldImagePath = path.join(_path, urlBasename(url)),
+        imagePath = path.join(_path, i + getExt(oldImagePath)),
+        apply = () => saveImage({
+          url,
+          path: _path,
+          headers: _headers,
+          index: i
+        }, recur);
+
+      fs.statAsync(oldImagePath).then(stats => {
+        if (stats.size > 4096) {
+          console.log("rename:", imagePath);
+          return fs.renameAsync(oldImagePath, imagePath).then(recur);
+        } else {
+          apply();
+        }
+      }).catch(ifErrorNoEnt(() => {
+        fs.statAsync(imagePath).then(recur).catch(ifErrorNoEnt(apply, recur))
+      }, recur));
     }
   }
-  mkdirp(chapterInfo.path).then(recur);
+  mkdirp(_path).then(recur);
 }
 
 // fn is called with chapterinfo, invoke this.done() to start the next chapter
 function loadAllChapters(chapterList, fn, cb) {
   const max = chapterList.length;
+
   function tryChapter(i) {
+    const done = () => tryChapter(i + 1);
     if (i >= max) { return (cb || ()=>{})(); }
-    let chapterInfo = chapterList[i];
-    if (!chapterInfo.loading) {
-      chapterInfo.loading = true;
-      fs.statAsync(chapterInfo.path).then(stats => {
-        // check if dir, then open it, then should try open .done
-        tryChapter(i + 1);
-          // fn.call({ done: () => { tryChapter(i + 1); } }, chapterInfo);
-      }).catch(err => {
-        if (err.code === "ENOENT") {
-          fn.call({ done: () => { tryChapter(i + 1); } }, chapterInfo);
-        } else {
-          console.error(err);
-        }
+    let chapter = chapterList[i];
+    if (!chapter.loading) {
+      chapter.loading = true;
+      fs.statAsync(chapter.path)
+      .then(stats => {
+        return fs.statAsync(path.join(chapter.path, '.done')).then(done)
       })
+      .catch(ifErrorNoEnt(() => fn.call({ done }, chapter), done));
     } else {
-      tryChapter(i + 1);
+      done();
     }
   }
   tryChapter(0);
 }
-
 
 const opts = {
   bannedTeams: [],

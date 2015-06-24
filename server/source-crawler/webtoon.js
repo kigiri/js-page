@@ -2,13 +2,13 @@
 
 const core = require("./core");
 
-const _baseUrl = "http://www.webtoons.com/_/_/_/";
+const _baseUrl = "http://www.webtoons.com/_/";
 
-function generateChapter(webtoonId, chapterId) {
+function generateChapter(webtoon, chapterId) {
   return {
     title: "Ep. " + chapterId,
     index: chapterId,
-    href: _baseUrl +"_/viewer?title_no="+ webtoonId +"&episode_no="+ chapterId,
+    href: webtoon.url +"_/viewer?title_no="+ webtoon.id +"&episode_no="+ chapterId,
     lang: "english",
     team: "webtoons",
   };
@@ -31,18 +31,21 @@ function parseChapterList($) {
   console.log("loading webtoon", title);
   let i = 0, chapterList = [];
   while (++i <= lastChapter) {
-    let c = generateChapter(this.webtoonId, i);
+    let c = generateChapter(this, i);
     c.path = pathMaker(c);
     chapterList.push(c);
   }
   return chapterList;
 }
 
-module.exports = function (webtoonId, opts, cb) {
-  const url = _baseUrl +"list?title_no="+ webtoonId;
-  core.getHTML(url).bind({webtoonId}).then(parseChapterList)
+module.exports = function (webtoon, opts, cb) {
+  const url = _baseUrl + (webtoon.challenge ? 'challenge/_/' : '_/_/');
+
+  webtoon.url = url;
+  core.getHTML(url +"list?title_no="+ webtoon.id)
+  .bind(webtoon).then(parseChapterList)
   .then(chapterList => core.loadAllChapters(chapterList, getChapter, _ => {
-    console.log("webtoon", webtoonId, "completed");
+    console.log("webtoon", webtoon.id, "completed");
     cb();
   }));
 };

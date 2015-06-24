@@ -40,8 +40,8 @@ const saveChapterData = (() => {
 
 const saveStoryData = (() => {
   const keys = [
-  "files",
-  "readingMode"
+    "files",
+    "readingMode"
   ];
   return story => fs.writeFileAsync(joinPath(_assetsPath, story.name, "data.json"),
     JSON.stringify(_.pick(story, keys)));
@@ -176,7 +176,8 @@ function collectChapterData(pages, chapterPath) {
 // type: (strip / auto)
 
 const getSubfileStats = path => fs.readdirAsync(path)
-  .map(file => fs.statAsync(joinPath(path, file)).then(stat => ({ path, file, stat })));
+  .map(file =>
+    fs.statAsync(joinPath(path, file)).then(stat => ({ path, file, stat })));
 
 const getSubDir = path => getSubfileStats(path).filter(f => f.stat.isDirectory());
 

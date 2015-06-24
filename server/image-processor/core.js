@@ -55,7 +55,10 @@ function getTeamChapters(storypath, teampath) {
         }
       }
 
-      pages.forEach((p, i) => p.index = i);
+      pages.forEach((p, i) => {
+        p.ratio = ((p.height < p.width) ? (p.width / 2) : p.width) / p.height;
+        p.index = i
+      });
       return { path: chapterpath, pages };
     });
   })
@@ -97,72 +100,72 @@ function openStory(story) {
 
 // "all-you-need-is-kill/01/01.jpg"
   // -> "story.json"
-openStory({
-  title: "All You Need Is Kill", // String
-  path: _.deburr(_.kebabCase("All You Need Is Kill")), // String
-  type: "manga", // StoryType ["manga", "manhua", "manwa", "manfra", "comic", "graphicnovel", "lightnovel"]
-  ongoing: false, // Boolean
-  readingTo: "left", // left, right or bottom
-  description: "",
-  genre: [
-    "Action",
-    "Mature",
-    "Mecha",
-    "Mystery",
-    "Psychological",
-    "Romance",
-    "Sci-fi",
-    "Seinen",
-    "Tragedy"
-  ],
-  year: 2014,
-  rating: 8.5,
-  tags: [
-    { score:  1, name: "Antihero / Heroine" },
-    { score:  1, name: "Award-Nominated Work" },
-    { score:  1, name: "Blood and Gore" },
-    { score:  1, name: "Death of Loved One/s" },
-    { score:  1, name: "Future" },
-    { score:  1, name: "Japan" },
-    { score:  1, name: "Older Male Younger Female" },
-    { score:  1, name: "Strategic Minds" },
-    { score:  1, name: "Strong Male Lead" },
-    { score:  1, name: "Young Male Lead "},
-    { score:  2, name: "Death" },
-    { score:  2, name: "Strong Female Lead" },
-    { score:  2, name: "Survival" },
-    { score:  2, name: "Violence" },
-    { score:  2, name: "War/s" },
-    { score:  2, name: "Warriors" },
-    { score:  8, name: "Flashbacks" },
-    { score:  9, name: "Adapted to Live Action" },
-    { score: 10, name: "Sacrifice/s" },
-    { score: 10, name: "Suicide/s" },
-    { score: 11, name: "Kill or Be Killed Situation" },
-    { score: 13, name: "Godly Powers" },
-    { score: 16, name: "Immortality" },
-    { score: 16, name: "Romantic Subplot" },
-    { score: 16, name: "Trainer-Trainee Relationship" },
-    { score: 18, name: "Cool Female Lead" },
-    { score: 19, name: "Dark Ambience" },
-    { score: 21, name: "Adapted to Movie" },
-    { score: 22, name: "Beautiful Female Lead" },
-    { score: 22, name: "Determined Protagonist" },
-    { score: 22, name: "Gun/s" },
-    { score: 23, name: "Saving the World" },
-    { score: 25, name: "Time Loop" },
-    { score: 26, name: "Invaders" },
-    { score: 26, name: "Invasion/s" },
-    { score: 26, name: "Training" },
-    { score: 27, name: "Resurrection" },
-    { score: 27, name: "Soldier/s" },
-    { score: 28, name: "Female Fighter/s" },
-    { score: 29, name: "Power Suit" },
-    { score: 29, name: "Weak to Strong" },
-    { score: 30, name: "Alien/s" },
-    { score: 30, name: "Based on a Novel" },
-    { score: 31, name: "Military" },
-    { score: 31, name: "Second Chances" }
-  ],
-  teams: {}
-});
+// openStory({
+//   title: "All You Need Is Kill", // String
+//   path: _.deburr(_.kebabCase("All You Need Is Kill")), // String
+//   type: "manga", // StoryType ["manga", "manhua", "manwa", "manfra", "comic", "graphicnovel", "lightnovel"]
+//   ongoing: false, // Boolean
+//   readingTo: "left", // left, right or bottom
+//   description: "",
+//   genre: [
+//     "Action",
+//     "Mature",
+//     "Mecha",
+//     "Mystery",
+//     "Psychological",
+//     "Romance",
+//     "Sci-fi",
+//     "Seinen",
+//     "Tragedy"
+//   ],
+//   year: 2014,
+//   rating: 8.5,
+//   tags: [
+//     { score:  1, name: "Antihero / Heroine" },
+//     { score:  1, name: "Award-Nominated Work" },
+//     { score:  1, name: "Blood and Gore" },
+//     { score:  1, name: "Death of Loved One/s" },
+//     { score:  1, name: "Future" },
+//     { score:  1, name: "Japan" },
+//     { score:  1, name: "Older Male Younger Female" },
+//     { score:  1, name: "Strategic Minds" },
+//     { score:  1, name: "Strong Male Lead" },
+//     { score:  1, name: "Young Male Lead "},
+//     { score:  2, name: "Death" },
+//     { score:  2, name: "Strong Female Lead" },
+//     { score:  2, name: "Survival" },
+//     { score:  2, name: "Violence" },
+//     { score:  2, name: "War/s" },
+//     { score:  2, name: "Warriors" },
+//     { score:  8, name: "Flashbacks" },
+//     { score:  9, name: "Adapted to Live Action" },
+//     { score: 10, name: "Sacrifice/s" },
+//     { score: 10, name: "Suicide/s" },
+//     { score: 11, name: "Kill or Be Killed Situation" },
+//     { score: 13, name: "Godly Powers" },
+//     { score: 16, name: "Immortality" },
+//     { score: 16, name: "Romantic Subplot" },
+//     { score: 16, name: "Trainer-Trainee Relationship" },
+//     { score: 18, name: "Cool Female Lead" },
+//     { score: 19, name: "Dark Ambience" },
+//     { score: 21, name: "Adapted to Movie" },
+//     { score: 22, name: "Beautiful Female Lead" },
+//     { score: 22, name: "Determined Protagonist" },
+//     { score: 22, name: "Gun/s" },
+//     { score: 23, name: "Saving the World" },
+//     { score: 25, name: "Time Loop" },
+//     { score: 26, name: "Invaders" },
+//     { score: 26, name: "Invasion/s" },
+//     { score: 26, name: "Training" },
+//     { score: 27, name: "Resurrection" },
+//     { score: 27, name: "Soldier/s" },
+//     { score: 28, name: "Female Fighter/s" },
+//     { score: 29, name: "Power Suit" },
+//     { score: 29, name: "Weak to Strong" },
+//     { score: 30, name: "Alien/s" },
+//     { score: 30, name: "Based on a Novel" },
+//     { score: 31, name: "Military" },
+//     { score: 31, name: "Second Chances" }
+//   ],
+//   teams: {}
+// });

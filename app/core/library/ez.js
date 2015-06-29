@@ -11,11 +11,31 @@ var $ez = {
     return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
   },
 
+  // Key copy
+  copyKeys: function (keys, source, target) {
+    keys.forEach(function (key) {
+      target[key] = source[key];
+    });
+  },
+  copy: function (source, target) {
+    Object.keys(source).forEach(function (key) {
+      target[key] = source[key];
+    });
+  },
+
   // Generate SVG for image placeholders
   fill: function (w, h) {
     var dim = ' width="'+ w +'" height="'+ h +'"';
     return 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"'
       + dim +'><rect fill="white"'+ dim +"></rect></svg>')";
+  },
+
+  repeat: function (str, count) {
+    var i = -1, ret = '';
+    while (++i < count) {
+      ret += str;
+    }
+    return ret;
   },
 
   // Sorts generator
@@ -29,6 +49,14 @@ var $ez = {
       if (a > b) { return reverse; }
       return -reverse;
     }
+  },
+
+  // Dom tools
+  dropChildrens: function (el) {
+    while (el.firstChild) {
+      el.removeChild(el.firstChild);
+    }
+    return el;
   },
 
   // Filters
@@ -71,6 +99,7 @@ var $ez = {
 };
 
 // pre-builded sorts :
+$ez.byName = $ez.by("name");
 $ez.byScore = $ez.by("score");
 $ez.byIndex = $ez.by("index");
 $ez.byPriority = $ez.by("priority");

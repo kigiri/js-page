@@ -12,6 +12,7 @@ var $history = {
   set: _h.replaceState.bind(_h),
   goHome: function () {
     _h.replaceState(null, "Home", "/");
+    $state.View.load('Home');
   }
 };
 

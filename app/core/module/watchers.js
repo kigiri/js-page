@@ -61,6 +61,21 @@ window.onmousemove = function (event) {
   }
 };
 
+window.onkeydown = (function () {
+  var handlers = {
+    27: function escape() {
+      if ($state.modal) {
+        $state.modal.hide();
+      }
+    }
+  };
+  function fallback() { }
+
+  return function (event) {
+    (handlers[event.which] || fallback)(event);
+  };
+})();
+
 window.addEventListener("orientationchange", callUpdate, false);
 window.addEventListener("resize", callUpdate, false);
 window.addEventListener('contextmenu', function (e) {

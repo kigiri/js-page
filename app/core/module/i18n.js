@@ -4,6 +4,7 @@ var _langArray = [ "en", "fr" ],
     _selectedLang = 1;
 
 var textData = {
+  STORY_MODAL_NO_DESCRIPTION: [ "No description found.", "Aucune description disponible." ],
   FORM_CONFIG_BACKGROUND_NAME: [ "Background", "Fond" ],
   FORM_CONFIG_BACKGROUND_DESC: [
     "Background page filling color",

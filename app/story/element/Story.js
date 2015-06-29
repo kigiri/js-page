@@ -1,4 +1,4 @@
-/* global Menu, Chapter, $state, $new, $url, $config, $add, $format, $loop */
+/* global Menu, Chapter, $state, $new, $url, $config, $add, $format, $loop, $ez */
 var _keyToCopy = [
   "title",
   "path",
@@ -12,23 +12,8 @@ var _keyToCopy = [
   "tags"
 ];
 
-function Story(storyInfo) {
+function Story() {
   $state.Story = this;
-  this.id = storyInfo.path;
-
-  _keyToCopy.forEach(function (key) {
-    this[key] = storyInfo[key];
-  }.bind(this));
-
-  $config.loadStory(this);
-  $config.updateReadingMode($state);
-
-  this.teamsData = storyInfo.teams;
-  this.availableTeams = Object.keys(this.teamsData);
-  this.team = this.availableTeams[0];
-  this.Menu = $state.Menu = new Menu();
-  this.chapterCache = [];
-  this.lastChapterIndex = this.teamsData[this.team].chapters.length - 1;
   this.HTMLElement = $new.div({
     id: "story",
     style: {
@@ -42,18 +27,32 @@ function Story(storyInfo) {
   initWatchers(this);
 }
 
+Story.prototype.load = function (storyInfo) {
+  this.id = storyInfo.path;
+  $ez.copyKeys(_keyToCopy, storyInfo, this);
+
+  $config.loadStory(this);
+  $config.updateReadingMode($state);
+
+  this.teamsData = storyInfo.teams;
+  this.availableTeams = Object.keys(this.teamsData);
+  this.team = this.availableTeams[0];
+  this.Menu = $state.Menu = new Menu();
+  this.chapterCache = [];
+  this.lastChapterIndex = this.teamsData[this.team].chapters.length - 1;
+};
+
 Story.prototype.setTeam = function (team) {
-  if (typeof team)
   if (this.availableTeams.indexOf(team) === -1) {
     this.team = this.team || this.availableTeams[0];
   } else if (this.team !== team) {
     this.team = team;
     this.chapterArray = [];
-    $url.set({team: team});
+    $url.setView("story", this.id).set({team: team});
     // should change selected chapter page
   }
   return this;
-}
+};
 
 var _separator = $new.div({
   id: "separator",

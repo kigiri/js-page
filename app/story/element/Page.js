@@ -198,6 +198,10 @@ Page.prototype.updateDownloadBar = function () {
   return this;
 };
 
+Page.prototype.reload = function () {
+  this.update();
+};
+
 Page.prototype.update = function () {
   this.updateDownloadBar();
   $format.resize.call(this);
@@ -270,7 +274,6 @@ Page.prototype.release = function () {
 
 
 // Handle user actions
-
 function mouseDown(event) {
   this.start = null;
   if (!$state.isActive) {

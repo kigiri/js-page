@@ -80,6 +80,11 @@ function validateInt(val) {
 }
 
 var _routes = {
+  home: {
+    __set__: function () {},
+    __apply__: function () { _path = "/"; },
+  },
+
   story: {
     __set__: function (val) {
       // should check if val is existing story

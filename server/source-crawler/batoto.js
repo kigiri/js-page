@@ -9,11 +9,8 @@ const
   _srcValidity = /^http:\/\/img\.bato\.to\/comics\/.+img[0-9]{6}\.([a-z]+)$/;
 
 function processTitle(el) {
-  const s = el.title.split(' | Sort: ');
-  let index = s[1].slice(-3);
   return {
-    title: s[0].trim(),
-    index: index,
+    index: el.title.split(/Ch\.([^: ]+)/)[1],
     href: el.href
   };
 }

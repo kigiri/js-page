@@ -5,9 +5,11 @@ const core = require("./core");
 const _baseUrl = "http://mangacow.co/";
 
 function generateChapter(index, mangacowKey) {
+  const numericalIndex = parseFloat(index);
+
   return {
     href: _baseUrl + mangacowKey +'/'+ index,
-    index: parseFloat(index),
+    index: isNaN(numericalIndex) ? index : numericalIndex,
     lang: "english",
     team: "mangacow"
   };

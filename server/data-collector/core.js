@@ -8,8 +8,9 @@ const
   gm = require("gm"),
   _ = require("lodash"),
   _assetsPath = 'public/assets/';
+
 var
-  _db = { chapters: {}, stories: {} };
+  _db = { chapters: {}, stories: {}, all: {} };
 
 
 function calculateRatio(page) {
@@ -43,8 +44,13 @@ const saveStoryData = (() => {
     "files",
     "readingMode"
   ];
-  return story => fs.writeFileAsync(joinPath(_assetsPath, story.name, "data.json"),
-    JSON.stringify(_.pick(story, keys)));
+  return story => {
+    const picked = _.pick(story, keys);
+
+    _db.all[story.name] = picked;
+    fs.writeFileAsync(joinPath(_assetsPath, story.name, "data.json"),
+      JSON.stringify(picked));
+  }
 })();
 
 function detectType(chapterInfo) {
@@ -197,14 +203,24 @@ function openChapter(chapter) {
 };
 
 function linkChapterToStory(chapter) {
-  if (!chapter.story) { console.log("chapter", chapter); }
   if (!_db.stories[chapter.story]) {
     _db.stories[chapter.story] = {
       name: chapter.story,
-      chapters: {}
+      chapters: []
     };
   }
-  _db.stories[chapter.story].chapters[chapter.name] = chapter;
+  _db.stories[chapter.story].chapters.push(chapter);
+}
+
+function storeChapterInFile(src, lang, team, index) {
+  if (!(lang in src)) {
+    src[lang] = {};
+  }
+
+  if (team in src[lang]) {
+    return src[lang][team].push(index);
+  }
+  return src[lang][team] = [ index ];
 }
 
 function collectStoryData(story) {
@@ -213,13 +229,17 @@ function collectStoryData(story) {
     widthRegularityScore = getMedian(chapters, "widthRegularityScore").median,
     heightRegularityScore = getMedian(chapters, "heightRegularityScore").median;
 
+  console.log("collecting", story.name);
+
   if (widthRegularityScore < 1 && heightRegularityScore > 1.5) {
     story.readingMode = "strip";
   }
 
-  story.files = _.chain(chapters).map(c => {
-    return _.pick(c, ["name", "team", "language"]);
-  }).uniq(c => c.name);
+  story.files = {};
+
+  _.each(chapters, c => {
+    storeChapterInFile(story.files, c.language, c.team, c.name);
+  });
   saveStoryData(story);
 }
 
@@ -231,6 +251,8 @@ function start() {
   .then(() => _.serial(_db.chapters, collectChapterData))
   .then(() => _.each(_db.chapters, linkChapterToStory))
   .then(() => _.each(_db.stories, collectStoryData))
+  .then(() => fs.writeFileAsync(joinPath(_assetsPath, "all-data.json"),
+    JSON.stringify(_db.all)))
   // .then(() => console.log(_db))
   .catch(console.error);
 }

@@ -21,6 +21,9 @@ const
   get = url =>
     request.getAsync({url, headers}).get(1).catch(handleError),
 
+  tryToCall = fn =>
+    typeof fn === "function" ? fn() : undefined,
+
   getXML = url =>
     get(url).then(parseXML),
 
@@ -70,6 +73,10 @@ function markAsDone(dirpath) {
 }
 
 function parseChapterIndex(index) {
+  if (typeof index === "number") {
+    return index.toString();
+  }
+
   index = index.replace(/^0+/, '');
   if (!index) {
     index = '0';
@@ -79,8 +86,9 @@ function parseChapterIndex(index) {
 
 function getChapterMaker(title) {
   const _basePath = 'public/assets/'+ toId(title) +'/';
-  return chapter =>
-    path.join(_basePath, chapter.lang, chapter.team, chapter.index.toString())
+  return chapter => 
+    path.join(_basePath, chapter.lang, chapter.team,
+      parseChapterIndex(chapter.index));
 }
 
 function saveAllImages(imageArray, chapterInfo, cb) {
@@ -126,7 +134,7 @@ function loadAllChapters(chapterList, fn, cb) {
 
   function tryChapter(i) {
     const done = () => tryChapter(i + 1);
-    if (i >= max) { return (cb || ()=>{})(); }
+    if (i >= max) { return tryToCall(cb); }
     let chapter = chapterList[i];
     if (!chapter.loading) {
       chapter.loading = true;

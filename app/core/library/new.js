@@ -36,6 +36,8 @@ function $new(key) {
   "b",
   "i",
   "s",
+  "p",
+  "h1",
   "div",
   "img",
   "span",

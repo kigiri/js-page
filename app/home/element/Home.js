@@ -1,26 +1,23 @@
-/* global StoryThumbnail, StoryModal, $new, $state, $stories */
+/* global StoryDetails, StoryModal, StorySelector, $new, $loop */
 
 function Home() {
+  this.details = new StoryDetails();
+  this.selector = new StorySelector(this.details);
   this.HTMLElement = $new.div({
     id: "home",
     style: {
-      margin: "3rem auto",
+      backgroundColor: "#F1F1F1",
+      height: "100%"
     }
-  });
-  this.update();
-  $state.View.HTMLElement.backgroundColor = "#F1F1F1";
-  var modal = new StoryModal();
-  $stories.each(function (storyData) {
-    this.HTMLElement.appendChild((new StoryThumbnail(storyData, modal)).HTMLElement);
-  }.bind(this));
-  window.addEventListener("resize", this.update.bind(this), false);
-}
-
-Home.prototype.update = function () {
-  this.HTMLElement.style.width = Math.max(~~(($state.width - 60) / 106), 1) * 106 + 'px';
+  }, this.details.HTMLElement, this.selector.HTMLElement);
+  $loop.resize.sub(this.update.bind(this));  
 }
 
 Home.prototype.unload = function () {
-  // this.HTMLElement.remove();
+  this.HTMLElement.remove();
 };
 
+Home.prototype.update = function () {
+  this.selector.update();
+  this.details.update();
+};

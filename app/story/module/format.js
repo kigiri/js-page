@@ -1,7 +1,7 @@
 /* global $config, $state, $url */
 
 function handlePageLoad(page) {
-  $url.set({page: page.index, chapter: page.chapter.index});
+  $url.setStoryIndexes(page.index, page.chapter.index);
   $state.dl.load(page);
 }
 
@@ -30,16 +30,25 @@ _strip = {
     return s;
   },
   load: function (page) {
-    if (page === null) { return; }
-    $state.page = page;
-    page.scrollTo();
-    handlePageLoad(page);
+    if (!page) { return; }
+    if ($state.page && $state.page.chapter !== page.chapter) {
+      $state.page = page;
+      $state.Story.loadChapter(page.chapter.index, page.index);
+    } else {
+      $state.page = page;
+      handlePageLoad(page.scrollTo());
+    }
   },
-  next: function (page) {
-    _strip.load(page.next());
+  next: function () {
+    var page = $state.page;
+    console.log("next")
+
+    page.next(_strip.load);
   },
-  previous: function (page) {
-    _strip.load(page.previous());
+  previous: function () {
+    var page = $state.page;
+    console.log("previous")
+    page.previous(_strip.load);
   },
   click: function (page, event) {
     if (event.y > $state.height / 2) {
@@ -50,12 +59,12 @@ _strip = {
   },
   resize: function () {
     this.HTMLElement.style.height = ($config.fit
-      ? ~~($state.width / this.width * this.height)
+      ? Math.min($state.width / this.width * this.height, this.height * $config.maxZoom)
       : this.height)
     +'px';
 
     if (this.isWide) {
-      style.backgroundSize = 'contain';
+      this.HTMLElement.style.backgroundSize = 'contain';
     }
     this.HTMLElement.style.width = '100%';
     this.HTMLElement.style.backgroundPosition = '50% 50%';
@@ -73,12 +82,14 @@ _single = {
   },
   load: function (page) {
     if (page === null) { return; }
+   try {
     $state.page = page;
     $state.eachVisiblePages("detatch");
     $state.pagesInView.length = 1;
     $state.pagesInView[0] = page;
     page.attach();
     handlePageLoad(page);
+   } catch (err) { console.error(err) }
   },
   next: function () {
     var page = $state.page;
@@ -97,12 +108,15 @@ _single = {
       }
     }
 
-    page = page.next();
-    while (page && page.url === "filler") {
-      page = page.next();
-    }
-    _single.load(page);
+    page.next(function skipFiller(page) {
+      if (page && page.url === "filler") {
+        page.next(skipFiller);
+      } else {
+        _single.load(page);
+      }
+    });
   },
+
   previous: function () {
     var page = $state.page;
 
@@ -120,11 +134,13 @@ _single = {
       }
     }
 
-    page = page.previous();
-    while (page && page.url === "filler") {
-      page = page.previous();
-    }
-    _single.load(page);
+    page.previous(function skipFiller(page) {
+      if (page && page.url === "filler") {
+        page.previous(skipFiller);
+      } else {
+        _single.load(page);
+      }
+    });
   },
   click: function (page, event) {
     var isNext = (event.x > $state.width / 2);
@@ -180,10 +196,14 @@ _double = {
       $state.pagesInView[0] = page;
     } else {
       if (page.isPair()) {
-        $state.pagesInView[0] = page.previous();
+        page.previous(function (page) {
+          $state.pagesInView[0] = page;
+        });
         $state.pagesInView[1] = page;
       } else {
-        $state.pagesInView[1] = page.next();
+        page.next(function (page) {
+          $state.pagesInView[1] = page;
+        });
         $state.pagesInView[0] = page;
       }
       $state.pagesInView.length = 2;
@@ -192,15 +212,19 @@ _double = {
     handlePageLoad(page);
   },
   next: function () {
-    _double.load($state.pagesInView[$state.pagesInView.length - 1].next());
+    $state.pagesInView[$state.pagesInView.length - 1].next(_double.load);
   },
   previous: function () {
-    var page = $state.pagesInView[0].previous();
-    if (page === null) { return; }
-    if (!page.isWide) {
-      page = page.previous();
-    }
-    _double.load(page);
+    $state.pagesInView[0].previous(function (page) {
+      if (page === null) { return; }
+      if (!page.isWide) {
+        page.previous(function (page) {
+          _double.load(page);
+        });
+      } else {
+        _double.load(page);
+      }
+    });
   },
   click: function (page, event) {
     var isNext;
@@ -213,14 +237,16 @@ _double = {
       isNext = page.isPair();
     }
     if (isNext) {
-      page = page.next();
+      page.next(_double.load);
     } else {
-      page = page.previous();
-      if (!page.isWide) {
-        page = page.previous();
-      }
+      page.previous(function (page) {
+        if (!page.isWide) {
+          page.previous(_double.load);
+        } else {
+          _double.load(page);
+        }
+      });
     }
-    _double.load(page);
   },
   resize: function () {
     var style = this.HTMLElement.style;
@@ -269,5 +295,6 @@ var $format = {
   resize: function () {
     _readingModes[$config.readingMode].resize.call(this);
   },
+  handlePageLoad: handlePageLoad,
 }
 

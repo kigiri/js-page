@@ -1,6 +1,9 @@
-/* global Menu, Chapter, $state, $new, $url, $config, $add, $format, $loop, $ez */
+/* global Chapter, $state, $new, $url, $config, $add, $format, $stories, $loop, $ez, $drag */
 var _keyToCopy = [
   "title",
+  "chapters",
+  "files",
+  "readingMode",
   "path",
   "type",
   "ongoing",
@@ -14,8 +17,20 @@ var _keyToCopy = [
 
 function Story() {
   $state.Story = this;
+  this.y = 0;
+  this.travelY = 0;
+  this.x = 0;
   this.HTMLElement = $new.div({
     id: "story",
+    tabIndex: 1,
+    onkeydown: function (event) {
+      var handler = _keyHandlers[event.keyCode];
+      if (handler) {
+        handler(event);
+      } else {
+        console.log(event.keyCode);
+      }
+    },
     style: {
       transform: "translate(0, 0)",
       transitionProperty: 'none',
@@ -23,37 +38,30 @@ function Story() {
       transitionTimingFunction: 'ease-out',
       overflow: "hidden"
     }
-  }, this.Menu.HTMLElement);
-  initWatchers(this);
+  });
 }
 
 Story.prototype.load = function (storyInfo) {
+  $url.loadStory(storyInfo.path);
+
+  initWatchers(this);
+
+  this.HTMLElement.focus();
+
   this.id = storyInfo.path;
   $ez.copyKeys(_keyToCopy, storyInfo, this);
 
-  $config.loadStory(this);
-  $config.updateReadingMode($state);
-
-  this.teamsData = storyInfo.teams;
-  this.availableTeams = Object.keys(this.teamsData);
-  this.team = this.availableTeams[0];
-  this.Menu = $state.Menu = new Menu();
-  this.chapterCache = [];
-  this.lastChapterIndex = this.teamsData[this.team].chapters.length - 1;
-};
-
-Story.prototype.setTeam = function (team) {
-  if (this.availableTeams.indexOf(team) === -1) {
-    this.team = this.team || this.availableTeams[0];
-  } else if (this.team !== team) {
-    this.team = team;
-    this.chapterArray = [];
-    $url.setView("story", this.id).set({team: team});
-    // should change selected chapter page
+  // temp fix :
+  if (this.readingMode === "strip") {
+    this.readingTo = "bottom";
+  } else {
+    this.readingTo = "left";
   }
+  $config.loadStory(this);
+
+  $config.updateReadingMode($state);
   return this;
 };
-
 var _separator = $new.div({
   id: "separator",
   style: {
@@ -63,42 +71,76 @@ var _separator = $new.div({
   }
 });
 
-Story.prototype.getChapter = function (i) {
-  var c;
-  if (i < 0 || i > this.lastChapterIndex) { return null; }
-  if (!this.chapterCache[i]) {
-    c = new Chapter(this, this.teamsData[this.team].chapters[i]);
-    $add(c.HTMLElement, this.HTMLElement);
-    $add(_separator, this.HTMLElement);
-    this.chapterCache[i] = c;
-  }
-  return this.chapterCache[i];
-};
-
-Story.prototype.setChapter = function (chapterIndex) {
-  this.chapter = this.getChapter(chapterIndex);
-  $add(this.chapter.HTMLElement, this.HTMLElement);
-  $add(_separator, this.HTMLElement);
+Story.prototype.getChapter = function (i, callback) {
+  $stories.get(this.id, i, function (chapter) {
+    if (!chapter.instance) {
+      chapter.instance = new Chapter(this, chapter);
+    }
+    callback(chapter.instance);
+  }.bind(this));
   return this;
 };
 
+Story.prototype.attach = function (HTMLElement) {
+  this.HTMLElement.appendChild(HTMLElement);
+  this.HTMLElement.appendChild(_separator);
+};
+
+Story.prototype.loadChapter = function (chapterIndex, pageIndex) {
+  detatchAllChapters();
+  return this.getChapter(chapterIndex, function (chapter) {
+    chapter.setPage(pageIndex);
+  }.bind(this));
+};
+
+function loadChapterCallback(chapter) { if (chapter) { chapter.setPage(0); } }
 Story.prototype.release = function (xMod, yMod) {
-  this.HTMLElement.style.transitionProperty = 'transform';
+  if (Math.abs(this.y) / ($state.height / 5) > 1) {
+    if (this.isDragged < 0) {
+      $state.page.chapter.previous(function (chapter) {
+        chapter.setPage("last");
+      });
+    } else {
+      $state.page.chapter.next(function (chapter) {
+        chapter.setPage(0);
+      });
+    }
+    $drag.freeze();
+  } else {
+    this.HTMLElement.style.transitionProperty = 'transform';
+  }
   this.y = 0;
   this.x = 0;
+  this.travelY = 0;
+  this.isDragged = 0;
   this.HTMLElement.style.transform = "translate("+ this.x +"px,"+ this.y +"px)";
 };
 
 Story.prototype.drag = function (xMod, yMod) {
-  this.y -= yMod;
+  var half = $state.height / 2;
+
+  if (!this.isDragged) {
+    this.isDragged = yMod;
+  }
+  this.travelY += yMod;
+  this.y -= Math.max(Math.max(half - Math.abs(this.travelY), 0) / half, 0.05) * yMod;
   this.x -= xMod;
   this.HTMLElement.style.transitionProperty = 'none';
   this.HTMLElement.style.transform = "translate("+ this.x +"px,"+ this.y +"px)";
 };
 
-
 function wheelWatcher(event) {
-  if (event.ctrlKey) { return; }
+  if (event.ctrlKey) {
+    if ($config.readingMode === "strip") {
+      if (event.deltaY > 0) {
+        // zoom $config.maxZoom
+      } else {
+        // unzoom $config.maxZoom
+      }
+    }
+    return;
+  }
+  if ($config.readingMode === "strip") { return }
   if (event.deltaY > 0) {
     $format.previous();
   } else {
@@ -120,8 +162,71 @@ var _keyHandlers = {
 };
 
 function handleRelease() { }
+
+function getAllAttachedPages() {
+  return document.getElementsByClassName("page");
+}
+
+function getAllAttachedChapters() {
+  return document.getElementsByClassName("chapter");
+}
+
+function detatchAllChapters() {
+  var attachedChapterArray = getAllAttachedChapters();
+  var i = -1;
+  while (++i < attachedChapterArray.length) {
+    attachedChapterArray[i].instance.detatch();
+  }
+}
+
+function deepEqual(a, b) {
+  var i = -1;
+  if (a.length !== b.length) { return false; }
+  while (++i < a.length) {
+    if (a[i] !== b[i]) { return false; }
+  }
+  return true;
+}
+
+function updatePagesInView() {
+  var
+    i = -1,
+    pages = getAllAttachedPages(),
+    pagesInView = [],
+    pos, page;
+
+  while (++i < pages.length) {
+    page = pages[i];
+    pos = page.getBoundingClientRect();
+
+    if (pos.bottom < 1 || pos.top > $state.height) {
+      if (pagesInView.length) { break; }
+    } else {
+      pagesInView.push(page.instance.updateDownloadBar());
+    }
+  }
+
+  if (!deepEqual(pagesInView, $state.pagesInView)) {
+    $state.pagesInView.length = 0;
+    i = -1;
+    if (pagesInView.length) {
+      $format.handlePageLoad(pagesInView[0]);
+    }
+    while (++i < pagesInView.length) {
+      $state.pagesInView[i] = pagesInView[i];
+    }
+  }
+}
+
 function loop() {
-  $state.eachVisiblePages("updateDownloadBar");
+  // update pages visible
+  if ($config.readingMode === "strip") {
+    updatePagesInView();
+    $state.eachVisiblePages("showProgressBar");
+  } else {
+    $state.eachVisiblePages("updateDownloadBar");
+  }
+
 }
 function handleResize() {
   var oldRm = $config.readingMode, newRm;
@@ -146,15 +251,6 @@ function handleResize() {
 }
 
 function initWatchers(story) {
-  window.onkeydown = function (event) {
-    var handler = _keyHandlers[event.keyCode];
-    if (handler) {
-      handler(event);
-    } else {
-      console.log(event.keyCode);
-    }
-  };
-
   window.addEventListener("wheel", wheelWatcher);
 
   handleRelease = function () {
@@ -167,6 +263,7 @@ function initWatchers(story) {
 
 Story.prototype.unload = function () {
   window.removeEventListener("wheel", wheelWatcher);
+  detatchAllChapters();
   this.HTMLElement.remove();
   $state.page = null;
   $state.pagesInView.length = 0;

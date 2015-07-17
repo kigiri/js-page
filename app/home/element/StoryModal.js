@@ -11,14 +11,16 @@ var _style = {
 
   },
   content: {
-    backgroundColor: "#E5E5E5",
-    borderRadius: "10px",
-    padding: "10px",
-    boxShadow: "#3D3D3D 0 0 30px 30px",
+    backgroundColor: "#F1F1F1",
+    borderRadius: "1rem",
+    padding: "1rem",
+    boxShadow: "#3D3D3D 0 0 3rem 3rem",
     border: "1px solid white",
+    maxHeight: "100%"
   },
   chapterContainer: {
-
+    maxHeight: "35rem",
+    overflow: "auto"
   },
   chapter: {
   },
@@ -48,11 +50,19 @@ function StoryModal() {
     content: $new.p({ style: _style.description }),
     placeholder: $new.p("STORY_MODAL_NO_DESCRIPTION")
   }
-  this.chapters = $new.div({ style: _style.chapterContainer });
+  this.chapters = $new.div({
+    style: _style.chapterContainer
+  });
+
   this.HTMLElement = $new.div({
     id: "story-modal-content",
     style: _style.content,
-  }, this.img, this.title, this.description.placeholder, this.description.content, this.chapters);
+  },
+  this.img,
+  this.title,
+  this.description.placeholder,
+  this.description.content,
+  this.chapters);
 }
 
 // Somewhat inheritance :)
@@ -76,7 +86,8 @@ StoryModal.prototype.load = function (data) {
   this.title.textContent = data.title || data.path;
 
   var
-    i = -1, chapter, el,
+    i = -1,
+      chapter, el,
     childArray = this.chapters.childNodes || [],
     max = Math.max(childArray.length, data.chapters.length);
 

@@ -78,7 +78,10 @@ function Menu() {
       onchange: applyToConfig,
     }
   });
-  this.HTMLElement = $new.div({id: "menu", style: _style.menu}, this.config.HTMLElement);
+  this.HTMLElement = $new.div({
+    id: "menu",
+    style: _style.menu
+  }, this.config.HTMLElement);
 }
 
 Menu.prototype.show = function () {

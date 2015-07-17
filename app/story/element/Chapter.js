@@ -1,20 +1,24 @@
-/* global Page, $new, $url, $state, $format */
+/* global Page, $new, $state, $format, $config */
 
 function Chapter(story, chapterInfo) {
-  console.log("new Chapter(", chapterInfo, ")");
   var i = -1, id, page;
   this.story = story;
   this.index = chapterInfo.index;
-  this.id = chapterInfo.path;
-  this.path = '/assets/'+ story.id +'/'+ story.team +'/'+ chapterInfo.path;
-  this.HTMLElement = $new.div({ id: 'chapter-'+ this.index });
-  this.pageArray = chapterInfo.pages.sort(function (a, b) {
-    return a.index - b.index;
-  }).map(function (page) {
-    return new Page(this, page);
+  this.id = story.id +'-chapter-'+ this.index;
+  this.path = chapterInfo.path;
+  this.HTMLElement = $new.div({
+    id: this.id,
+    className: "chapter"
+  });
+  this.pageArray = chapterInfo.data.sort(function (a, b) {
+    return parseInt(a.name) - parseInt(b.name);
+  }).map(function (page, index) {
+    return new Page(this, page, index);
   }.bind(this));
 
   id = 0;
+  this.isAttached = false;
+  this.HTMLElement.instance = this;
   this.pageCount = this.pageArray.length;
   while (++i < this.pageCount) {
     page = this.pageArray[i];
@@ -23,38 +27,38 @@ function Chapter(story, chapterInfo) {
   }
   
   if (id % 2) {
-    console.log('adding filler page for last page');
     page = new Page(this, {
-      index: this.pageCount,
-      path: "filler",
+      name: "filler",
       height: 0,
       width: 0
-    });
+    }, this.pageCount);
     page.id = id + 1;
     this.pageArray.push(page);
     this.pageCount++;
   }
-
 }
 
-Chapter.prototype.getPage = function (idx) {
-  var toLoad;
+Chapter.prototype.getPage = function (idx, callback) {
   if (idx < 0) {
-    toLoad = this.previous();
-    if (toLoad === null) { return null; }
-    return toLoad.getPage(toLoad.pageCount + idx);
+    this.previous(function (chapter) {
+      if (!chapter) { return; }
+      chapter.getPage(chapter.pageCount + idx, callback);
+    });
+  } else if (idx >= this.pageCount) {
+    this.next(function (chapter) {
+      if (!chapter) { return; }
+      chapter.getPage(idx - this.pageCount, callback);
+    }.bind(this));
+  } else {
+    callback(this.pageArray[idx]);
   }
-  if (idx >= this.pageCount) {
-    toLoad = this.next();
-    if (toLoad === null) { return null; }
-    return toLoad.getPage(idx - this.pageCount);
-  }
-  return this.pageArray[idx];
+  return this;
 };
 
 Chapter.prototype.eachPage = function (fn) {
-  var i = -1,
-      len = this.pageArray.length;
+  var
+    i = -1,
+    len = this.pageArray.length;
 
   switch (typeof fn) {
     case "string":
@@ -63,22 +67,59 @@ Chapter.prototype.eachPage = function (fn) {
       } break;
     case "function":
       while (++i < len) {
-        fn(this.pageArray[i]);
+        fn(this.pageArray[i], i, this.pageArray);
       } break;
     default: break;
   }
   return this;
 };
 
-Chapter.prototype.previous = function () {
-  return this.story.getChapter(this.index - 1);
+Chapter.prototype.previous = function (cb) {
+  return this.story.getChapter(this.index - 1, cb);
 };
 
-Chapter.prototype.next = function () {
-  return this.story.getChapter(this.index + 1);
+Chapter.prototype.next = function (cb) {
+  return this.story.getChapter(this.index + 1, cb);
 };
 
 Chapter.prototype.setPage = function (pageIndex) {
-  $format.load(this.getPage(pageIndex));
+  var loadCallback;
+
+  if ($state.page && $state.page.chapter !== this) {
+    $state.page.chapter.detatch();
+  }
+  if (pageIndex === "last") {
+    pageIndex = this.pageCount - 1;
+    loadCallback = function (page) {
+      setTimeout(function () {
+        window.scrollTo(0, $state.maxScroll);
+      }, 100);
+      $format.load(page);
+    }
+  } else {
+    loadCallback = function (page) {
+      setTimeout(page.scrollTo.bind(page), 100);
+      $format.load(page);
+    }
+  }
+  this.getPage(pageIndex, loadCallback);
+
+  return this.attach();
+};
+
+Chapter.prototype.detatch = function () {
+  this.isAttached = false;
+  this.eachPage("detatch");
+  this.HTMLElement.remove();
+  return this;
+};
+
+Chapter.prototype.attach = function () {
+  if (this.isAttached) { return this; }
+  this.isAttached = true;
+  if ($config.readingMode === "strip") {
+    this.eachPage("attach");
+  }
+  this.story.attach(this.HTMLElement);
   return this;
 };

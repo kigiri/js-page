@@ -1,4 +1,4 @@
-/* global Average, ImageLoader, $new, $state, $config, $add, $url, $format, $loop, $watchers, $drag, $ez */
+/* global Average, ImageLoader, $new, $state, $config, $add, $format, $loop, $watchers, $drag, $ez */
 
 var _style = {
   filler: {
@@ -123,33 +123,35 @@ function generatePageLoader(page) {
     page.HTMLElement.style.backgroundImage = 'url("'+ objectURL +'")';
     page.isLoading = false;
     page.isComplete = true;
-    if (page.thenCallback instanceof Function) {
+    if (typeof page.thenCallback === "function") {
       page.thenCallback.call(page);
     }
   });
 }
 
-function Page(chapter, pageInfo) {
-  this.index = pageInfo.index;
+function Page(chapter, pageInfo, index) {
+  this.index = index;
+  this.id = chapter.id + "-page-"+ index;
   this.chapter = chapter;
   this.isLoading = false;
   this.width = pageInfo.width;
   this.height = pageInfo.height;
   this.isWide = (pageInfo.width > pageInfo.height);
   this.HTMLElement = $new.div({
-    id: "page-"+ this.index,
+    id: this.id,
     className: "page",
     style: $format.getStyle.call(this),
     onmousedown: mouseDown.bind(this),
   });
-  if (pageInfo.path === "filler") {
+  this.HTMLElement.instance = this;
+  if (pageInfo.name === "filler") {
     this.url = 'filler';
     this.isWide = false;
     this.isComplete = true;
     this.progress = null;
     this.HTMLElement.style.backgroundImage = $ez.fill(pageInfo.width, pageInfo.height);
   } else {
-    this.url = chapter.path +'/'+ pageInfo.path;
+    this.url = chapter.path + pageInfo.name;
     this.isComplete = false;
     this.initRequestData();
     this.progress = new Progress();
@@ -198,15 +200,26 @@ Page.prototype.updateDownloadBar = function () {
   return this;
 };
 
-Page.prototype.reload = function () {
-  this.update();
-};
-
-Page.prototype.update = function () {
-  this.updateDownloadBar();
+Page.prototype.resize = function () {
   $format.resize.call(this);
   return this;
 };
+
+Page.prototype.showProgressBar = function () {
+  if (!this.isComplete && !this.progress.isAttached) {
+    this.HTMLElement.appendChild(this.progress.HTMLElement);
+    this.progress.isAttached = true;
+  }
+  return this;
+};
+
+Page.prototype.reload = function () {
+  return this.update();
+};
+
+Page.prototype.update = function () {
+  return this.resize().updateDownloadBar();
+};8
 
 Page.prototype.load = function (debuged) {
   if (!this.isLoading && !this.isComplete) {
@@ -229,22 +242,34 @@ Page.prototype.detatch = function () {
   if (this.isAttached) {
     $state.pagesToCleanup.push(this);
     this.isAttached = false;
+    if (this.resizeTask) {
+      $loop.resize.unsub(this.resizeTask);
+    }
   }
   return this;
 };
 
 Page.prototype.attach = function () {
   if (!this.isAttached) {
-    this.updateDownloadBar();
     this.update();
-    if (!this.isComplete && !this.progress.isAttached) {
-      this.HTMLElement.appendChild(this.progress.HTMLElement);
-      this.progress.isAttached = true;
-    }
     this.chapter.HTMLElement.appendChild(this.HTMLElement);
+    this.chapter.attach();
     this.isAttached = true;
+
+    if ($config.readingMode === "strip") {
+      if (!this.resizeTask) {
+        var resize = this.resize.bind(this);
+        this.resizeTask = function () { resize(); };
+      }
+
+      $loop.resize.sub(this.resizeTask);
+    } else {
+      this.showProgressBar();
+    }
+
+    $loop.newPage.request(2);
   }
-  $loop.newPage.request(2);
+
   return this; 
 };
 
@@ -252,16 +277,18 @@ Page.prototype.isPair = function () {
   return (this.id % 2 ? $config.invertPageOrder : !$config.invertPageOrder);
 };
 
-Page.prototype.previous = function () {
-  return this.chapter.getPage(this.index - 1);
+Page.prototype.previous = function (callback) {
+  return this.chapter.getPage(this.index - 1, callback);
+};
+
+Page.prototype.next = function (callback) {
+  return this.chapter.getPage(this.index + 1, callback);
 };
 
 Page.prototype.scrollTo = function () {
-  // this.HTMLElement.scor
-};
-
-Page.prototype.next = function () {
-  return this.chapter.getPage(this.index + 1);
+  console.log("lol", this.id);
+  this.HTMLElement.scrollIntoView();
+  return this;
 };
 
 Page.prototype.release = function () {
@@ -286,7 +313,6 @@ function mouseDown(event) {
   }
 
   if (event.which !== 1) { return; }
-  $watchers.callUpdate();
   $state.x = event.clientX;
   $state.y = event.clientY;
   this.start = { x: $state.x, y: $state.y };

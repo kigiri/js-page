@@ -20,7 +20,7 @@ function renderJs() {
 
 function buildCore(jsCode) {
   var htmlText = [
-    '<!DOCTYPE html><html><head>',
+    '<!DOCTYPE html allowfullscreen><html><head>',
     '<title>'+ title +'</title>',
     '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
     '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">',

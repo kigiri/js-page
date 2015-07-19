@@ -2,7 +2,6 @@
 
 function handlePageLoad(page) {
   $url.setStoryIndexes(page.index, page.chapter.index);
-  $state.dl.load(page);
 }
 
 var _readingModes = {};
@@ -249,22 +248,28 @@ _double = {
     }
   },
   resize: function () {
-    var style = this.HTMLElement.style;
+    var
+      style = this.HTMLElement.style,
+      invert = $config.invertPageOrder;
+
     if ($config.fit) {
       style.height = $state.height +'px';
     } else {
-      style.height = ~~((($state.width / 2) / this.width) * this.height) +'px';
+      style.height = (($state.width / 2) / this.width * this.height) +'px';
     }
-    style.width = '50%';
-    style.float = 'right';
+
     if (this.isWide) {
       style.backgroundSize = 'contain';
       style.width = '100%';
       style.backgroundPosition = '50% 50%';
-    } else if (this.isPair()) {
-      style.backgroundPosition = '100% 50%';
+    } else if (this.isPair() ? !invert : invert) {
+      style.float = 'right';
+      style.width = '50%';
+      style.backgroundPosition = '0 50%';
     } else {
-      style.backgroundPosition = '-1px 50%';
+      style.float = 'left';
+      style.width = '50%';
+      style.backgroundPosition = '100% 50%';
     }
     this.chapter.story.HTMLElement.style.height = this.HTMLElement.style.height;
   },

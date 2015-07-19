@@ -1,7 +1,6 @@
-/* global Page, $new, $state, $format, $config */
+/* global Page, $new, $state, $format, $config, $ez, $loop */
 
 function Chapter(story, chapterInfo) {
-  var i = -1, id, page;
   this.story = story;
   this.index = chapterInfo.index;
   this.id = story.id +'-chapter-'+ this.index;
@@ -10,33 +9,121 @@ function Chapter(story, chapterInfo) {
     id: this.id,
     className: "chapter"
   });
-  this.pageArray = chapterInfo.data.sort(function (a, b) {
-    return parseInt(a.name) - parseInt(b.name);
-  }).map(function (page, index) {
+  this.pageArray = chapterInfo.data.sort($ez.byId).map(function (page, index) {
     return new Page(this, page, index);
   }.bind(this));
 
-  id = 0;
   this.isAttached = false;
   this.HTMLElement.instance = this;
-  this.pageCount = this.pageArray.length;
-  while (++i < this.pageCount) {
-    page = this.pageArray[i];
-    page.id = id;
-    id += page.isWide ? 2 : 1;
-  }
-  
-  if (id % 2) {
-    page = new Page(this, {
-      name: "filler",
-      height: 0,
-      width: 0
-    }, this.pageCount);
-    page.id = id + 1;
-    this.pageArray.push(page);
-    this.pageCount++;
-  }
+  try {
+  this.insertFillers().generateId();
+  } catch (err) { console.log(err) }
 }
+
+
+function makeFiller(chapter, page) {
+  return new Page(chapter, {
+    name: "filler",
+    height: page.height,
+    width: page.width
+  });
+}
+
+
+Chapter.prototype.insertFillers = function () {
+  var
+    pages = this.pageArray;
+    i = -1,
+    fillerArray = [],
+    nextFiller = 0,
+    space = 0,
+    count = 0;
+
+  this.pageCount = pages.length;
+
+  while (++i < pages.length) {
+    space++;
+    count++;
+    if (pages[i].isWide) {
+      if (space % 2 === 0) {
+        fillerArray.push(nextFiller);
+      }
+      space = 0;
+      nextFiller = i + 1;
+      count++;
+    }
+  }
+
+  i = fillerArray.length;
+  while (--i >= 0) {
+    var idx = fillerArray[i];
+    pages.splice(idx, 0, makeFiller(this, pages[idx]));
+  }
+
+  if ((count + fillerArray.length) % 2) {
+    if (nextFiller) {
+      pages.push(makeFiller(this, pages[pages.length - 1]));
+    } else {
+      pages.unshift(makeFiller(this, pages[0]));
+    }
+  }
+
+  this.pageCount = pages.length;
+  return this;
+};
+
+Chapter.prototype.fixPageOrder = function () {
+  var pages = this.pageArray;
+  pages.push(makeFiller(this, pages[pages.length - 1]));
+  pages.unshift(makeFiller(this, pages[0]));
+  return this.refreshPageList();
+}
+
+Chapter.prototype.removeRedondantFillers = function () {
+  var i = -1, wasFiller = false, purge = [];
+  while (++i < this.pageArray.length) {
+    if (this.pageArray[i].isFiller) {
+      if (wasFiller) {
+        purge.push(i - 1);
+        wasFiller = false;
+      }
+      wasFiller = true;
+    } else {
+      wasFiller = false;
+    }
+  }
+
+  i = purge.length;
+  while (--i >= 0) {
+    this.pageArray.splice(purge[i], 2);
+  }
+ 
+  this.pageCount = this.pageArray.length;
+  return this;
+};
+
+Chapter.prototype.generateId = function () {
+  var
+    pagination = 0,
+    i = -1;
+
+  while (++i < this.pageCount) {
+    pagination += this.pageArray[i].setIndex(i, pagination).isWide ? 2 : 1;
+  }
+
+  return this;
+};
+
+Chapter.prototype.refreshPageList = function () {
+  this.insertFillers().removeRedondantFillers().generateId();
+
+  return this.setPage($state.page.index);
+}
+
+Chapter.prototype.removePage = function (page) {
+  this.pageArray.splice(page.index, 1);
+  return this.refreshPageList();
+};
 
 Chapter.prototype.getPage = function (idx, callback) {
   if (idx < 0) {

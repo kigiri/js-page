@@ -38,6 +38,20 @@ var $ez = {
     return ret;
   },
 
+  clamp: function (min, max, value) {
+    if (min > value) { return min; }
+    if (max < value) { return max; }
+    return value;
+  },
+
+  getIndex: function (array, index) {
+    return $ez.clamp(0, array.length - 1, index);
+  },
+
+  getElement: function (array, index) {
+    return array[$ez.getIndex(array, index)];
+  },
+
   // Sorts generator
   prefix: prefixKey,
   by: function (key, reverse) {
@@ -102,4 +116,5 @@ var $ez = {
 $ez.byName = $ez.by("name");
 $ez.byScore = $ez.by("score");
 $ez.byIndex = $ez.by("index");
+$ez.byId = $ez.by("id");
 $ez.byPriority = $ez.by("priority");

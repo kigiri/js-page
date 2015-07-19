@@ -129,16 +129,15 @@ function generatePageLoader(page) {
   });
 }
 
-function Page(chapter, pageInfo, index) {
-  this.index = index;
-  this.id = chapter.id + "-page-"+ index;
+// You have to manualy define the page id AND index !
+// it's done by calling generate ID and filler method from the chapter
+function Page(chapter, pageInfo) {
   this.chapter = chapter;
   this.isLoading = false;
   this.width = pageInfo.width;
   this.height = pageInfo.height;
   this.isWide = (pageInfo.width > pageInfo.height);
   this.HTMLElement = $new.div({
-    id: this.id,
     className: "page",
     style: $format.getStyle.call(this),
     onmousedown: mouseDown.bind(this),
@@ -150,6 +149,7 @@ function Page(chapter, pageInfo, index) {
     this.isComplete = true;
     this.progress = null;
     this.HTMLElement.style.backgroundImage = $ez.fill(pageInfo.width, pageInfo.height);
+    this.isFiller = true;
   } else {
     this.url = chapter.path + pageInfo.name;
     this.isComplete = false;
@@ -200,6 +200,22 @@ Page.prototype.updateDownloadBar = function () {
   return this;
 };
 
+Page.prototype.remove = function () {
+  this.chapter.removePage(this.detatch());
+  return this;
+};
+
+Page.prototype.insert = function () {
+  var newFiller = new Page(this.chapter, {
+    name: "filler",
+    height: this.height,
+    width: ~~(this.width / (this.isWide + 1))
+  });
+  this.chapter.pageArray.splice(this.index, 0, newFiller);
+  this.chapter.refreshPageList();  
+  return this;
+};
+
 Page.prototype.resize = function () {
   $format.resize.call(this);
   return this;
@@ -217,9 +233,16 @@ Page.prototype.reload = function () {
   return this.update();
 };
 
+Page.prototype.setIndex = function (index, id) {
+  this.index = index;
+  this.id = id;
+  this.HTMLElement.id = this.chapter.id + "-page-"+ index;
+  return this;
+};
+
 Page.prototype.update = function () {
   return this.resize().updateDownloadBar();
-};8
+};
 
 Page.prototype.load = function (debuged) {
   if (!this.isLoading && !this.isComplete) {
@@ -274,7 +297,7 @@ Page.prototype.attach = function () {
 };
 
 Page.prototype.isPair = function () {
-  return (this.id % 2 ? $config.invertPageOrder : !$config.invertPageOrder);
+  return this.isWide || (this.id % 2);
 };
 
 Page.prototype.previous = function (callback) {
@@ -286,7 +309,6 @@ Page.prototype.next = function (callback) {
 };
 
 Page.prototype.scrollTo = function () {
-  console.log("lol", this.id);
   this.HTMLElement.scrollIntoView();
   return this;
 };
@@ -303,6 +325,16 @@ Page.prototype.release = function () {
 // Handle user actions
 function mouseDown(event) {
   this.start = null;
+  if (event.altKey) {
+    if (event.which === 1) {
+      console.log("adding a page after", this.HTMLElement.id);
+      this.insert();
+    } else {
+      console.log("deleting page", this.HTMLElement.id);
+      this.remove();
+    }
+    return false;
+  }
   if (!$state.isActive) {
     $state.isActive = true;
     return false;

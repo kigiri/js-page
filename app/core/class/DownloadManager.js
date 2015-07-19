@@ -1,33 +1,20 @@
 
 function _load(element) {
-  this.stop();
-  this.current = element;
+  if (element.index !== this.current.index) {
+    this.stop();
+    this.current = element;
+  }
   this.start();
 }
 
-function DownloadManager(element, range) {
+function DownloadManager(element, range, pagesInView) {
   element = element || { index: -1 };
   this.current = element;
   this.range = range || Infinity;
   this.lastRequestedId = element.index;
   this.timeout = null;
+  this.pagesInView = pagesInView;
 }
-
-DownloadManager.prototype.load = function (element) {
-  if (!element === null) { return this; }
-  this.lastRequestedId = element.index;
-  if ((this.current === null || element.index !== this.current.index)
-    && !element.isLoading) {
-    clearTimeout(this.timeout);
-    this.timeout = setTimeout(function() {
-      _load.call(this, element);
-    }.bind(this), 100);
-  } else if (!element.isLoading) {
-    clearTimeout(this.timeout);
-    this.timeout = setTimeout(this.start.bind(this), 100);
-  }
-  return this;
-};
 
 DownloadManager.prototype.stop = function () {
   if (this.current !== null && typeof this.current.cancel === "function") {
@@ -36,16 +23,42 @@ DownloadManager.prototype.stop = function () {
   return this;
 };
 
-DownloadManager.prototype.start = function () {
-  var next, max = this.lastRequestedId + this.range;
+DownloadManager.prototype.start = function (recur) {
+  var
+    count = 0,
+    start = this.pagesInView[0],
+    manager = this;
 
-  while (this.current.isComplete) {
-    next = this.current.next();
-    if ((next === null)
-      || (next.index === this.current.index || next.index > max)) { return this; }
-    this.current = next;
+  if (!recur && this.lastStartingPoint === start) {
+    return this;
   }
 
-  this.current.load().then(this.start.bind(this));
+  function findNext(element) {
+    if ((!element || element === this)
+      || (element.index === this.index || count > manager.range)) { return; }
+
+    count++;
+    if (element.isComplete) {
+      element.next(findNext.bind(element));
+    } else {
+      if (element === manager.current) {
+        if (!element.isLoading) {
+          element.load().then(function () {
+            manager.start(true);
+          });
+        }
+      } else {
+        manager.stop();
+        manager.current = element;
+        element.load().then(function () {
+          manager.start(true);
+        });
+      }
+    }
+  }
+
+  this.lastStartingPoint = start;
+  findNext(start);
+
   return this;
 };

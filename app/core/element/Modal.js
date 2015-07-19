@@ -12,9 +12,14 @@ function Modal() {
       bottom: 0,
       height: "100%",
       width: "100%",
+      padding: "3rem",
       display: "none"
     },
-    onclick: this.hide.bind(this),
+    onclick: function (event) {
+      if (event.target === this.HTMLElement) {
+        this.hide();
+      }
+    }.bind(this)
   });
   this.visible = false;
   $state.modal = this;
@@ -44,4 +49,4 @@ Modal.prototype.toggle = function () {
   return this.visible ? this.hide() : this.show();
 };
 
-new Modal(); // save modal in state
+// new Modal(); // save modal in state

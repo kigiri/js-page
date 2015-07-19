@@ -4,17 +4,15 @@ var _store = {},
     err = console.error.bind(console),
     _keys = [];
 
-function load(story, chapter, callback) {
-  var p = JSONLoader("/assets/"+ story +"/"+ chapter +"/data.json")
-  .then(function (data) {
-    _store[id] = data;
+function load(chapter, callback) {
+  chapter.data = JSONLoader(chapter.path + "data.json").then(function (data) {
+    chapter.data = data;
     if (typeof callback === "function") {
-      callback(data);
+      callback(chapter);
     }
     this.resolve();
   }).catch(err);
-  _store[id] = p;
-  return p;
+  return chapter.data;
 }
 
 function getChapter(chapters, name) {
@@ -33,7 +31,7 @@ function generateChapterList(story, files) {
       files[lang][team].forEach(function (name) {
         var originalName = name;
         var chapter = {
-          path: basePath + lang +"/"+ team +"/"+ name +"/data.json",
+          path: basePath + lang +"/"+ team +"/"+ name +"/",
           team: team,
           lang: lang
         };
@@ -48,6 +46,8 @@ function generateChapterList(story, files) {
         }
 
         var index = getChapter(chapters, name);
+
+
         if (index === -1) {
           chapters.push({
             name: name,
@@ -61,6 +61,11 @@ function generateChapterList(story, files) {
     });
   });
   chapters.sort($ez.byName);
+  chapters.forEach(function (chapter, index) {
+    chapter.files.forEach(function (file) {
+      file.index = index;
+    });
+  });
   return chapters;
 }
 
@@ -71,12 +76,7 @@ var $stories = {
       store[key].path = key; // should be name instead of path I think
       store[key].chapters = generateChapterList(key,  store[key].files);
     });
-    _store = store;
-  },
-
-  load: function (id, index) {
-    var p = JSONLoader("/assets/"+ id +"/data.json").then(function (data) {});
-
+    $stories.store = _store = store;
   },
 
   each: function (fn) {
@@ -95,22 +95,21 @@ var $stories = {
   },
   prepare: function (id) {
     if (!_store[id]) {
-      load(id);
+      // load(id);
     }
   },
-  get: function (story, chapter, callback) {
-    if (_store[id] instanceof Ajax) {
-      _store[id].then(callback);
-    } else if (!_store[id]) {
-      return load(id, callback);
+  get: function (id, chapter, callback) {
+    try {
+      chapter = _store[id].chapters[chapter].files[0];
+    } catch (err) { return; }
+
+    if (chapter.data instanceof Ajax) {
+      return chapter.data.then(callback);
+    } else if (!chapter.data) {
+      return load(chapter, callback);
     }
-    return callback(_store[id]);
+    return callback(chapter);
   }
 };
 
 $stories.init(__loadStories__);
-console.log(__loadStories__);
-
-
-
-

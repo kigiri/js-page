@@ -8,17 +8,27 @@ var _task,
 
 function reach(yMod, xMod, diff) {
   var newScroll = $state.scrollTop + yMod;
-  if (newScroll < 0) {
+  if ($state.Story.isDragged) {
+    // cancel drag
+    if ($state.Story.isDragged > 0) {
+      $state.Story.drag(0, (newScroll - $state.maxScroll))
+    } else {
+      $state.Story.drag(0, newScroll);
+    }
+  } else if (newScroll < 0) {
+    // top reached
     window.scrollTo(0, 0);
     if (diff) {
-      $state.Story.drag(0, newScroll / diff);
+      $state.Story.drag(0, newScroll);
     }
   } else if ($state.maxScroll < newScroll) {
+    // bottom reached
     window.scrollTo(0, $state.maxScroll);
     if (diff) {
-      $state.Story.drag(0, (newScroll - $state.maxScroll) / diff)
+      $state.Story.drag(0, (newScroll - $state.maxScroll))
     }
   } else {
+    // normal
     window.scrollTo(0, newScroll);
   }
   _inertia = yMod;
@@ -40,7 +50,6 @@ var $drag = {
     _inertia = 0;
   }
 };
-
 
 $drag.start = function () {
   _task = $loop.drag.repeat().sub(function (e) {

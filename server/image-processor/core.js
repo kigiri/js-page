@@ -57,7 +57,7 @@ function getTeamChapters(storypath, teampath) {
 
       pages.forEach((p, i) => {
         p.ratio = ((p.height < p.width) ? (p.width / 2) : p.width) / p.height;
-        p.index = i
+        p.index = i;
       });
       return { path: chapterpath, pages };
     });

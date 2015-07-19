@@ -30,7 +30,7 @@ $state.initDl = function () {
   if ($state.dl) {
     $state.dl.range = buff;
   } else {
-    $state.dl = new DownloadManager($state.page, buff)
+    $state.dl = new DownloadManager($state.page, buff, _pagesInView);
   }
 }
 

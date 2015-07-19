@@ -5,7 +5,8 @@ var $config = {
   autoReadingMode: true,
   readingMode: "single", // single, double or strip,
   background: "black",
-  pageBuffer: 50, // amount of page to precache ahead
+  maxZoom: 1.25,
+  pageBuffer: 10, // amount of page to precache ahead
   lang: 'fr',
   fit: true
 };

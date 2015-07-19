@@ -1,4 +1,4 @@
-/* global ScriptLoader, $new, $stories, $config, $url, $ez, $state */
+/* global ScriptLoader, $new, $stories, $config, $ez, $state */
 
 function View() {
   this.y = 0;
@@ -6,9 +6,9 @@ function View() {
   this.HTMLElement = $new.div({
     id: "view",
     style: {
-      overflowY: "auto",
+      overflowY: "hidden",
       width: "100%",
-      height: "100%"
+      height: "100%",
     }
   });
   this.HTMLElement.setAttribute('allowFullScreen', '');
@@ -27,43 +27,30 @@ View.prototype.set = function (type, content) {
 };
 
 View.prototype.load = function (view, callback) {
-  console.log("loading", view);
+  function applyView() {
+    if (!View.instances[view]) {
+      try {
+        View.instances[view] = new __[view]();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    $state.View.set(view, View.instances[view]);
+    if (typeof callback === 'function') {
+      callback(View.instances[view]);
+    }
+  };
+
   if (!__[view]) {
-    return ScriptLoader('/'+ view.toLowerCase() +'.js', true).then(function () {
-      if (!View.instances[view]) {
-        try {
-          View.instances[view] = new __[view]();
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      $state.View.set(view, View.instances[view]);
-      if (typeof callback === 'function') {
-        callback(View.instances[view]);
-      }
-    });
+    ScriptLoader('/'+ view.toLowerCase() +'.js', true).then(applyView);
+  } else {
+    applyView();
   }
-  callback(__[view].instance);
-  return null;
-};
-
-View.prototype.fullscreen = function () {
-  $ez.fullscreen(this.HTMLElement);
   return this;
 };
 
-function loadStory(opts) {
-  var q = $state.View.load("Story", function (story) {
-    $state.storyId = opts.name;
-    $stories.get(opts.name, function (storyData) {
-      story.load(instance);
-      $state.View.set("story", story);
-      // story.setTeam(opts.team).getChapter(opts.chapter).setPage(opts.page);
-    });
-  });
-
-  if (q) {
-    $stories.prepare(opts.id);
-  }
-}
+View.prototype.fullscreen = function () {
+  $ez.fullscreen(document.documentElement);
+  return this;
+};

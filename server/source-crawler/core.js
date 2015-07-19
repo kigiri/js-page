@@ -102,27 +102,13 @@ function saveAllImages(imageArray, chapterInfo, cb) {
     if (++i >= imageArray.length) {
       markAsDone(_path).then(cb);
     } else {
-      const
-        url = imageArray[i],
-        oldImagePath = path.join(_path, urlBasename(url)),
-        imagePath = path.join(_path, i + getExt(oldImagePath)),
-        apply = () => saveImage({
-          url,
-          path: _path,
-          headers: _headers,
-          index: i
-        }, recur);
-
-      fs.statAsync(oldImagePath).then(stats => {
-        if (stats.size > 4096) {
-          console.log("rename:", imagePath);
-          return fs.renameAsync(oldImagePath, imagePath).then(recur);
-        } else {
-          apply();
-        }
-      }).catch(ifErrorNoEnt(() => {
-        fs.statAsync(imagePath).then(recur).catch(ifErrorNoEnt(apply, recur))
-      }, recur));
+      const url = imageArray[i];
+      saveImage({
+        url,
+        path: _path,
+        headers: _headers,
+        index: i
+      }, recur);
     }
   }
   mkdirp(_path).then(recur);

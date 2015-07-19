@@ -89,6 +89,12 @@ var $loop = {
   "updateScroll",
   "drag",
   "stopDrag",
+  "leftClickDown",
+  "leftClickUp",
+  "rightClickDown",
+  "rightClickUp",
+  "middleClickDown",
+  "middleClickUp",
 ].forEach(function (key, priority) {
   $loop.get(key).setPriority(priority);
 });

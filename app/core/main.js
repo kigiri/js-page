@@ -1,4 +1,4 @@
-/* global App, View, $url */
+/* global App, View */
 
 new App();
 

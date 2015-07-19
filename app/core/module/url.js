@@ -1,121 +1,146 @@
-/* global $ez, $state, $history, $loop */
+/* global $state, $stories */
 
-var _ = {
-  story: '',
-  data: {},
-  team: '',
-  chapter: '',
-  page: '',
+var _url = {};
+
+function parseHash() {
+  var
+    hashPart = window.location.hash.slice(2).split("?"),
+    args = {
+      story: hashPart[0],
+      hash: "/"+ window.location.hash
+    };
+
+  if (args.story && hashPart[1]) {
+    hashPart[1].split("&").forEach(function (keyValueString) {
+      var
+        keyValueArray = keyValueString.split("="),
+        key = keyValueArray[0],
+        value = keyValueArray[1],
+        parsedValue = parseInt(value);
+
+      args[key] = isNaN(parsedValue) ? value : parsedValue - 1;
+    });
+  }
+  return args;
 };
 
-_view = {};
-_path = '/';
+function parseIndex(value) {
+  return (!value || isNaN(value) || value < 0) ? 0 : value;
+}
 
-// website/read/all-you-need-is-kill/team/MTO/chapter/5/page/2
+function generateHash() {
+  return _url.story
+    ? "/#/"+ _url.story +'?chapter='+ (_url.chapter + 1) +'&page='+ (_url.page + 1)
+    : "/#/";
+}
 
-var _urlTask = $loop.urlChange.sub(function () {
-  $history.add(null, "yoyo", window.location.origin + '/#'+ _path);
-});
+function loadStoryView(storyId, path, chapter, page) {
+  if (storyId === _url.story) { return; }
+  _url.story = storyId;
+  _url.chapter = parseIndex(chapter);
+  _url.page = parseIndex(page);
+  window.document.title = "Reading "+ storyId;
 
-function change(key, value) {
-  if (_[key] !== value && _[key] !== undefined) {
-    _[key] = value;
-    return true;
+  $state.View.load("Story", function (Story) {
+    Story.load($stories.store[storyId]).loadChapter(_url.chapter, _url.page);
+  });
+};
+
+function setStoryUrlData(storyId, chapter, page) {
+  _url.story = storyId || "";
+  _url.chapter = chapter || 0;
+  _url.page = page || 0;
+}
+
+function loadHomeView() {
+  window.document.title = "Home";
+  $state.View.load("Home");
+  setStoryUrlData();
+}
+
+function loadUrl() {
+  var parsedData = parseHash();
+  if (parsedData.story && $stories.store[parsedData.story]) {
+    loadStoryView(parsedData.story, parsedData.hash, parsedData.chapter, parsedData.page);
+  } else {
+    $url.set('/#/');
+    loadHomeView();
   }
-  return false;
 }
 
 var $url = {
-  setView: function (key, value) {
-    var view = _routes[key];
-    console.log(view, key);
-    if (view && view !== _view) {
-      _view = view;
-      view.__set__(value);
-      view.__apply__();
+  // go:  function () { window.history.go(null, ) },
+  init: function () {
+    setStoryUrlData();
+    loadUrl();
+    return $url;
+  },
+
+  add: function (path) {
+    console.log("adding", path, "to history");
+    window.history.pushState(null, window.document.title, path);
+    return $url;
+  },
+
+  set: function (path) {
+    window.history.replaceState(null, window.document.title, path);
+    return $url;
+  },
+
+  setStoryIndexes: function (page, chapter, callback) {
+    var changes = false, hash;
+
+    if (page !== _url.page) {
+      _url.page = page;
+      changes = true;
+    }
+
+    if (chapter !== _url.chapter) {
+      _url.chapter = chapter;
+      changes = true;
+    }
+
+    if (changes) {
+      hash = generateHash();
+      $url.set(hash);
+
+      if (typeof callback === "function") {
+        callback(hash);
+      }
     }
     return $url;
   },
-  init: function () {
-    var args = window.location.hash.split('/').filter($ez.removeEmpty);
-    var i = 2, key, view = _routes[args[0]];
 
-    if (!view || view.__set__(args[1]) === false) {
-      $history.goHome();
-      return _;
-    }
-
-    _view = view;
-    while (i < args.length) {
-      key = args[i++];
-      if (typeof view[key] !== "function") {
-        break;
-      }
-      _[key] = args[i++];
-    }
-    view.__apply__();
-    return _;
+  loadStory: function (storyId, chapter, page) {
+    if (storyId === _url.story) { return $url; }
+    setStoryUrlData(storyId, chapter, page);
+    var hash = generateHash();
+    $url.add(hash);
+    loadStoryView(storyId, hash, chapter, page);
+    return $url;
   },
 
-  set: function (updateData) {
-    var i = -1, key, hasChanged = false, updatedKeys = Object.keys(updateData);
-    while (++i < updatedKeys.length) {
-      key = updatedKeys[i];
-      if (change(key, updateData[key])) {
-        hasChanged = true;
-      }
-    }
-    if (hasChanged) {
-      _view.__apply__();
-    }
+  goHome: function () {
+    $url.add("/#/");
+    loadHomeView();
+    return $url;
   }
 };
 
-function validateInt(val) {
-  var v = parseInt(val);
-  if (isNaN(v)) {
-    return false;
-  }
-  return v;
-}
+window.onpopstate = loadUrl;
 
-var _routes = {
-  home: {
-    __set__: function () {},
-    __apply__: function () { _path = "/"; },
-  },
-
-  story: {
-    __set__: function (val) {
-      // should check if val is existing story
-      if (!val) { return false; }
-      _.story = val;
-    },
-    __apply__: function () {
-      _path = "/story/" + _.story + '/';
-      Object.keys(_routes.story).forEach(function (key) {
-        if (/^__(.+)__$/.test(key)) { return; }
-        _[key] = _routes.story[key](_[key]);
-        _path += key +'/'+ _[key] +'/';
+window.onhashchange = function () {
+  var parsedData = parseHash();
+  if (parsedData.story) {
+    if (parsedData.story === _url.story) {
+      $url.setStoryIndexes(parsedData.page, parsedData.chapter, function (hash) {
+        $state.Story.loadChapter(parsedData.chapter, parsedData.page);
       });
-      _urlTask.request();
-    },
-    team: function (val) {
-      return "MTO";
-    },
-    chapter: function (val) {
-      val = validateInt(val);
-      if (val === false) {
-        val = 0; // should try resume where the user last chapter read
-      }
-      return val;
-    },
-    page: function (val) {
-      val = validateInt(val);
-      if (val === false) {
-        val = 0; // should try resume where the user last page read
-      }
-      return val;
-    },
+    } else if ($stories.store[parsedData.story]) {
+      loadStoryView(parsedData.story, parsedData.hash, parsedData.chapter, parsedData.page);
+    } else {
+      $url.set('/#/');
+      loadHomeView();
+    }
   }
-}
+};

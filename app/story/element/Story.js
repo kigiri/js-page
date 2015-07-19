@@ -55,7 +55,7 @@ Story.prototype.load = function (storyInfo) {
   if (this.readingMode === "strip") {
     this.readingTo = "bottom";
   } else {
-    this.readingTo = "left";
+    this.readingTo = "right"; // should get this from story defined data
   }
   $config.loadStory(this);
 
@@ -149,8 +149,18 @@ function wheelWatcher(event) {
 }
 
 var _keyHandlers = {
-  39: function () { $format.previous(); },
-  37: function () { $format.next(); },
+  39: $format.previous,
+  78: $format.previous,
+  65: $format.previous,
+  72: $format.previous,
+  37: $format.next,
+  68: $format.next,
+  76: $format.next,
+  69: $format.next,
+  82: function () {
+    $config.invertPageOrder = !$config.invertPageOrder;
+    $loop.resize.request();
+  },
   27: function () {
     $state.inContextMenu = false;
   },
@@ -158,6 +168,9 @@ var _keyHandlers = {
     if (e.altKey) {
       $state.View.fullscreen();
     }
+  },
+  70: function () {
+    $state.page.chapter.fixPageOrder();
   }
 };
 
@@ -226,8 +239,9 @@ function loop() {
   } else {
     $state.eachVisiblePages("updateDownloadBar");
   }
-
+  $state.dl.start();
 }
+
 function handleResize() {
   var oldRm = $config.readingMode, newRm;
   $config.updateReadingMode($state);
